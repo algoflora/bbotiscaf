@@ -1,0 +1,15 @@
+{:paths ["src"]
+ :deps {metosin/malli {:mvn/version "0.16.1"}
+        net.jmglov/blambda
+        {:git/url "https://github.com/aldebogdanov/blambda.git"
+         :git/tag "0.0.1"
+         :git/sha "0c3e991"}}
+ :tasks
+ {:requires ([blambda.cli :as blambda])
+  blambda {:doc "Controls Blambda runtime and layers"
+           :task (blambda/dispatch
+                  {;:deps-layer-name "bbotiscaf-deps"
+                   :lambda-name "bbotiscaf-test-1"
+                   :lambda-handler "main/handler"
+                   :lambda-iam-role "arn:aws:iam::414250673812:role/service-role/bbotiscaf-test-1-role-royq25au"
+                   :source-files ["main.clj"]})}}}
