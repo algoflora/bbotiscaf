@@ -4,4 +4,5 @@
   [:map
    [:event
     [:map
-     [:type [:enum "internal"]]]]])
+     [:type string?]
+     [:arguments map?]]]])
