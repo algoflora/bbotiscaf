@@ -1,0 +1,4 @@
+{:paths ["./"]
+ :deps {metosin/malli {:mvn/version "0.16.1"}
+        com.taoensso/timbre {:mvn/version "6.5.0"}}
+ :pods {huahaiy/datalevin "0.9.6"}}
