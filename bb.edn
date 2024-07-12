@@ -1,10 +1,7 @@
 {:paths ["src"]
- :deps {metosin/malli {:mvn/version "0.16.1"}
-        com.taoensso/timbre {:mvn/version "6.5.0"}
-        net.jmglov/blambda
+ :deps {net.jmglov/blambda
         {:git/url "https://github.com/aldebogdanov/blambda.git"
-         :git/tag "0.0.1"
-         :git/sha "0c3e991"}}
+         :git/sha "a7fc65aa77ab859219596774a55a7b54d6674b13"}}
  :tasks
  {:requires ([blambda.cli :as blambda])
   blambda {:doc "Controls Blambda runtime and layers"

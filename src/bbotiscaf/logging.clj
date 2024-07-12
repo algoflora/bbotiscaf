@@ -41,7 +41,7 @@
    :rate-limit nil
    :output-fn  :inherit
    :fn         (fn [{:keys [level ?err vargs ?ns-str
-                            ?file hostname_ timestamp_ ?line] :as d}]
+                            ?file hostname_ timestamp_ ?line]}]
                  (let [data (process-vargs vargs)]
                    (println (format "%s [%s] <%s:%s:%s> - %s%s%s"
                                     @timestamp_
