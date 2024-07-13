@@ -1,15 +1,21 @@
 {:paths ["src"]
  :deps {net.jmglov/blambda
         {:git/url "https://github.com/aldebogdanov/blambda.git"
-         :git/sha "a7fc65aa77ab859219596774a55a7b54d6674b13"}}
+         :git/sha "711f23a4f9ac3016004356c1cf184356d2ff4050"}}
  :tasks
  {:requires ([blambda.cli :as blambda])
   blambda {:doc "Controls Blambda runtime and layers"
            :task (blambda/dispatch
-                  {:deps-layer-name "bbotiscaf-deps"
-                   :lambda-name "bbotiscaf-test-1"
+                  {:bb-arch "arm64"
+                   :deps-layer-name "bbotiscaf-deps"
+                   :use-custom-tf-resources true
+                   :lambda-name "test-1"
                    :lambda-handler "main/handler"
-                   :lambda-iam-role "arn:aws:iam::414250673812:role/service-role/bbotiscaf-test-1-role-royq25au"
+                   :lambda-timeout 5
+                   :lambda-iam-role "${aws_iam_role.function.arn}"
+                   :extra-tf-config ["tf/lambda.tf"
+                                     "tf/cluster.tf"]
+                   :extra-tf-vars {:cluster "development"}
                    :source-files ["bbotiscaf/core.clj"
                                   "bbotiscaf/logging.clj"
                                   "bbotiscaf/misc.clj"
