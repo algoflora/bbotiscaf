@@ -129,7 +129,7 @@ resource "aws_security_group" "lambda_shared" {
 
 # SQS Queue for Webhook Requests
 resource "aws_sqs_queue" "normal" {
-  name = "bbotiscaf.${var.cluster_tags.cluster}.sqs.normal"
+  name = "bbotiscaf-${var.cluster_tags.cluster}-sqs-normal.fifo"
 
   fifo_queue                  = true
   content_based_deduplication = true
@@ -151,7 +151,7 @@ resource "aws_sqs_queue" "normal" {
 
 # Dead-Letter Queue for messages that fail processing
 resource "aws_sqs_queue" "dlq" {
-  name = "bbotiscaf.${var.cluster_tags.cluster}.sqs.dlq"
+  name = "bbotiscaf-${var.cluster_tags.cluster}-sqs-dlq.fifo"
 
   fifo_queue                  = true
   content_based_deduplication = true
@@ -175,7 +175,7 @@ resource "aws_apigatewayv2_api" "cluster" {
 
 # API Gateway Stage
 resource "aws_apigatewayv2_stage" "cluster" {
-  api_id      = aws_apigatewayv2_api.main.id
+  api_id      = aws_apigatewayv2_api.cluster.id
   name        = "$default"
   auto_deploy = true
 
@@ -186,35 +186,27 @@ resource "aws_apigatewayv2_stage" "cluster" {
 
 # Universal SQS Integration for API Gateway
 resource "aws_apigatewayv2_integration" "sqs" {
-  api_id           = aws_apigatewayv2_api.main.id
+  api_id           = aws_apigatewayv2_api.cluster.id
   integration_type = "AWS_PROXY"
-  integration_uri  = "arn:aws:apigateway:${data.aws_region.current.name}:sqs:path/${data.aws_caller_identity.current.account_id}/${aws_sqs_queue.normal.name}"
-  
-  credentials_arn  = aws_iam_role.api_gateway_sqs.arn
-  integration_method = "POST"
-  payload_format_version = "1.0"
-
-  request_parameters = {
-    "MessageBody" : "$request.body",
-    "MessageGroupId" : "$request.path.lambda_name"
+  integration_subtype = "SQS-SendMessage"
+  credentials_arn     = aws_iam_role.api_gateway_sqs.arn
+  request_parameters  = {
+    QueueUrl = aws_sqs_queue.normal.url
+    MessageBody = "$request.body"
+    MessageGroupId = "$request.path.lambda_name"
   }
-
-  tags = merge(var.cluster_tags, {
-    Name = "bbotiscaf.${var.cluster_tags.cluster}.apigw.integration"
-  })
+  
+  payload_format_version = "1.0"
+  timeout_milliseconds   = 29000
 }
 
 data "aws_caller_identity" "current" {}
 
 # Route for SQS Integration for API Gateway
 resource "aws_apigatewayv2_route" "sqs_route" {
-  api_id    = aws_apigatewayv2_api.main.id
+  api_id    = aws_apigatewayv2_api.cluster.id
   route_key = "POST /{lambda_name}"
   target    = "integrations/${aws_apigatewayv2_integration.sqs.id}"
-
-  tags = merge(var.cluster_tags, {
-    Name = "bbotiscaf.${var.cluster_tags.cluster}.apigw.route"
-  })
 }
 
 # IAM Role for API Gateway to send Messages to SQS
@@ -252,19 +244,15 @@ resource "aws_iam_role_policy" "api_gateway_sqs" {
         Action = [
           "sqs:SendMessage"
         ]
-        Resource = aws_sqs_queue.normal.arn
+        Resource = [aws_sqs_queue.normal.arn]
       }
     ]
-  })
-
-  tags = merge(local.lambda_tags, {
-    Name = "bbotiscaf.${var.cluster_tags.cluster}.iam-policy.api-gateway-sqs"
   })
 }
 
 # Output API Endpoint (Webhook) 
 output "api_gateway_url" {
-  value = aws_apigatewayv2_api.main.api_endpoint
+  value = aws_apigatewayv2_api.cluster.api_endpoint
 }
 
 # Cluster-wide EFS
@@ -283,10 +271,6 @@ resource "aws_efs_mount_target" "cluster" {
   file_system_id  = aws_efs_file_system.cluster.id
   subnet_id       = aws_subnet.private[count.index].id
   security_groups = [aws_security_group.efs.id]
-
-  tags = merge(var.cluster_tags, {
-    Name = "bbotiscaf.${var.cluster_tags.cluster}.efs.mnt-target-${count.index + 1}"
-  })
 }
 
 # Security Group for Mount Targets
@@ -325,7 +309,7 @@ resource "aws_efs_file_system_policy" "cluster" {
           "elasticfilesystem:ClientMount",
           "elasticfilesystem:ClientWrite"
         ]
-        Resource = aws_efs_file_system.cluster.arn
+        Resource = [aws_efs_file_system.cluster.arn]
         Condition = {
           StringLike = {
             "aws:PrincipalArn": "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/bbotiscaf.${var.cluster_tags.cluster}.iam-role.*"
@@ -333,10 +317,6 @@ resource "aws_efs_file_system_policy" "cluster" {
         }
       }
     ]
-  })
-
-  tags = merge(var.cluster_tags, {
-    Name = "bbotiscaf.${var.cluster_tags.cluster}.efs-policy.cluster"
   })
 }
 

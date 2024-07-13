@@ -33,16 +33,6 @@ resource "aws_lambda_function" "lambda" {
   tags = merge(local.lambda_tags, {
     Name = "bbotiscaf.${local.lambda_tags.cluster}.lambda.${var.lambda_name}"
   })
-  
-  # {% if lambda-env-vars|length > 0 %}
-  # environment {
-  #   variables = {
-  #     {% for i in lambda-env-vars %}
-  #     {{i.key}} = "{{i.val}}"
-  #     {% endfor %}
-  #   }
-  # }
-  # {% endif %}
 }
 
 resource "aws_cloudwatch_log_group" "lambda" {
@@ -64,7 +54,7 @@ resource "aws_iam_role" "lambda" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "${aws_cloudwatch_log_group.lambda.arn}:*"
+        Resource = ["${aws_cloudwatch_log_group.lambda.arn}:*"]
       },
       {
         Effect = "Allow"
@@ -94,7 +84,7 @@ resource "aws_iam_policy" "lambda" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "${aws_cloudwatch_log_group.lambda.arn}:*"
+        Resource = ["${aws_cloudwatch_log_group.lambda.arn}:*"]
       }
     ]
   })
@@ -110,7 +100,7 @@ resource "aws_iam_role_policy_attachment" "lambda" {
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_trigger" {
-  event_source_arn = aws_sqs_queue.core.arn
+  event_source_arn = aws_sqs_queue.normal.arn
   function_name    = aws_lambda_function.lambda.arn
   
   batch_size       = 10
@@ -127,10 +117,6 @@ resource "aws_lambda_event_source_mapping" "sqs_trigger" {
       })
     }
   }
-
-  tags = merge(local.lambda_tags, {
-    Name = "bbotiscaf.${local.lambda_tags.cluster}.source-mapping.sqs-trigger.${var.lambda_name}"
-  })
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_sqs" {

@@ -14,20 +14,20 @@
             [babashka.process :refer [shell]]
             [clojure.pprint :refer [pprint]]))
 
-(time (pods/load-pod "dtlv"))
-(time (require '[pod.huahaiy.datalevin :as d]))
+;; (time (pods/load-pod "dtlv"))
+;; (time (require '[pod.huahaiy.datalevin :as d]))
 
-(defn do-things
-  []
-  (let [conn (time (d/get-conn "/mnt/dtlv/bbotiscaf-test-1"))]
+;; (defn do-things
+;;   []
+;;   (let [conn (time (d/get-conn "/mnt/efs/dtlv"))]
 
-    (try
-      (d/with-transaction [cn conn]
-        (time (d/transact! cn [{:user/uuid (random-uuid)
-                                :user/name "Ivan"}]))
-        (time (d/q '[:find (pull ?u [*]) :where [?u :user/name]] (d/db cn))))
-      #_(finally (d/close conn))))
-  nil)
+;;     (try
+;;       (d/with-transaction [cn conn]
+;;         (time (d/transact! cn [{:user/uuid (random-uuid)
+;;                                 :user/name "Ivan"}]))
+;;         (time (d/q '[:find (pull ?u [*]) :where [?u :user/name]] (d/db cn))))
+;;       #_(finally (d/close conn))))
+;;   nil)
 
 (m/=> handle-update [:=> [:cat spec.tg/update-schema] :nil])
 (defn- handle-update
@@ -80,7 +80,7 @@
                :context context})
     (doseq [r rs]
       (handler (-> r :body (json/parse-string true))))
-    (do-things)))
+    #_(do-things)))
 
 (defn malli-instrument-error-handler [error data]
   (log/error ::malli-instrument-error
@@ -89,4 +89,4 @@
               :data data})
   (throw (ex-info "Malli instrumentation error" {:error error :data data})))
 
-;(mi/instrument! {:report malli-instrument-error-handler})
+(mi/instrument! {:report malli-instrument-error-handler})
