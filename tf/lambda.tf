@@ -50,20 +50,10 @@ resource "aws_iam_role" "lambda" {
     Statement = [
       {
         Effect = "Allow"
-        Action = [
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ]
-        Resource = ["${aws_cloudwatch_log_group.lambda.arn}:*"]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "ec2:CreateNetworkInterface",
-          "ec2:DescribeNetworkInterfaces",
-          "ec2:DeleteNetworkInterface"
-        ]
-        Resource = "*"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
       }
     ]
   })
@@ -97,6 +87,11 @@ resource "aws_iam_policy" "lambda" {
 resource "aws_iam_role_policy_attachment" "lambda" {
   role = aws_iam_role.lambda.name
   policy_arn = aws_iam_policy.lambda.arn
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_trigger" {
