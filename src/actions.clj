@@ -2,4 +2,4 @@
 
 (defn greet
   [{:keys [name]}]
-  (printf "Namaste, %s!\n" name))
+  (printf "Hello, %s!\n" name))

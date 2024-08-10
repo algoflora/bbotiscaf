@@ -9,7 +9,7 @@
                   {:bb-arch "arm64"
                    :deps-layer-name "bbotiscaf-deps"
                    :use-custom-tf-resources true
-                   :lambda-name "test-2"
+                   :lambda-name "test-1"
                    :lambda-handler "main/handler"
                    :lambda-timeout 5
                    :lambda-iam-role "${aws_iam_role.function.arn}"

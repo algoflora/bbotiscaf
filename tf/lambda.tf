@@ -6,7 +6,7 @@ locals {
 
 
 resource "aws_lambda_function" "lambda" {
-  function_name = "${local.lambda_tags.cluster}_${var.lambda_name}"
+  function_name = "bbotiscaf-${local.lambda_tags.cluster}-${var.lambda_name}"
   role = "${aws_iam_role.lambda.arn}"
   handler = var.lambda_handler
   memory_size = var.lambda_memory_size
@@ -26,7 +26,7 @@ resource "aws_lambda_function" "lambda" {
   }
 
   vpc_config {
-    subnet_ids         = aws_subnet.private[*].id
+    subnet_ids         = aws_subnet.public[*].id
     security_group_ids = [aws_security_group.lambda_shared.id]
   }
 
@@ -36,7 +36,7 @@ resource "aws_lambda_function" "lambda" {
 }
 
 resource "aws_cloudwatch_log_group" "lambda" {
-  name = "/aws/bbotiscaf/${local.lambda_tags.cluster}/lambda/${var.lambda_name}"
+  name = "/aws/lambda/${aws_lambda_function.lambda.function_name}"
 
   tags = merge(local.lambda_tags, {
     Name = "bbotiscaf.${local.lambda_tags.cluster}.cw-log-group.lambda.${var.lambda_name}"
@@ -108,7 +108,9 @@ resource "aws_lambda_event_source_mapping" "sqs_trigger" {
   filter_criteria {
     filter {
       pattern = jsonencode({
-        messageGroupId : [var.lambda_name]
+        attributes: {
+          MessageGroupId: ["${aws_lambda_function.lambda.function_name}"]
+        }
       })
     }
   }
