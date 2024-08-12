@@ -2,7 +2,7 @@
 
 (def sqs-context-schema
   [:map
-   ["content-length" :string]
+   ["content-length" {:optional true} :string]
    ["content-type" :string]
    ["date" :string]
    ["lambda-runtime-aws-request-id" :string]
