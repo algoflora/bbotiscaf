@@ -10,12 +10,10 @@
             [bbotiscaf.spec.aws :as spec.aws]
             [bbotiscaf.spec.telegram :as spec.tg]
             [bbotiscaf.spec.action :as spec.act]
-            [babashka.pods :as pods]
-            [babashka.process :refer [shell]]
-            [clojure.pprint :refer [pprint]]))
+            [babashka.pods :as pods]))
 
-;; (time (pods/load-pod "dtlv"))
-;; (time (require '[pod.huahaiy.datalevin :as d]))
+(pods/load-pod 'huahaiy/datalevin "0.9.10")
+(require '[pod.huahaiy.datalevin :as d])
 
 ;; (defn do-things
 ;;   []

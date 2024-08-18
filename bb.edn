@@ -1,7 +1,7 @@
 {:paths ["src"]
  :deps {net.jmglov/blambda
         {:git/url "https://github.com/aldebogdanov/blambda.git"
-         :git/sha "d729c7cc320717ab5d6d2ef5a8ff745b983b70d9"}}
+         :git/sha "82e4d98ff7d552ef207ceb29c0b666bbffb7db26"}}
  :tasks
  {:requires ([blambda.cli :as blambda])
   blambda {:doc "Controls Blambda runtime and layers"
