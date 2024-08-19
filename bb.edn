@@ -1,30 +1,5 @@
-{:paths ["src"]
- :deps {net.jmglov/blambda
-        {:git/url "https://github.com/aldebogdanov/blambda.git"
-         :git/sha "82e4d98ff7d552ef207ceb29c0b666bbffb7db26"}}
- :tasks
- {:requires ([blambda.cli :as blambda])
-  blambda {:doc "Controls Blambda runtime and layers"
-           :task (blambda/dispatch
-                  {:bb-arch "arm64"
-                   :deps-layer-name "bbotiscaf-deps"
-                   :use-custom-tf-resources true
-                   :s3-bucket "bbotiscaf"
-                   :lambda-name "test-1"
-                   :lambda-handler "main/handler"
-                   :lambda-timeout 5
-                   :lambda-iam-role "${aws_iam_role.function.arn}"
-                   :extra-tf-config ["tf/lambda.tf"
-                                     "tf/cluster.tf"]
-                   :extra-tf-vars {:cluster "development"
-                                   :tfstate-bucket "bbotiscaf"}
-                   :source-files ["bbotiscaf/core.clj"
-                                  "bbotiscaf/logging.clj"
-                                  "bbotiscaf/misc.clj"
-                                  "bbotiscaf/spec/action.clj"
-                                  "bbotiscaf/spec/aws.clj"
-                                  "bbotiscaf/spec/commons.clj"
-                                  "bbotiscaf/spec/core.clj"
-                                  "bbotiscaf/spec/telegram.clj"
-                                  "actions.clj"
-                                  "main.clj"]})}}}
+{:paths ["src" "resources"]
+ :deps {metosin/malli {:mvn/version "0.16.1"}
+        com.taoensso/timbre {:mvn/version "6.5.0"}
+        integrant/integrant {:mvn/version "0.10.0"}
+        aero/aero {:mvn/version "1.1.6"}}}

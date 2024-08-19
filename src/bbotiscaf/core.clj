@@ -60,7 +60,7 @@
     (m/validate spec.act/action-request-schema req)
     (handle-action req)))
 
-(defn setup-logs!
+(defn- setup-logs!
   [context]
   (logging/set-lambda-context! context)
   (logging/inject-lambda-context!))

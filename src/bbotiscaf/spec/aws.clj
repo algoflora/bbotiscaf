@@ -2,6 +2,7 @@
 
 (def sqs-context-schema
   [:map
+   {:closed true}
    ["content-length" {:optional true} :string]
    ["content-type" :string]
    ["date" :string]
@@ -12,6 +13,7 @@
 
 (def sqs-record-schema
   [:map
+   {:closed true}
    [:md5OfBody :string]
    [:eventSourceARN :string]
    [:awsRegion :string]
@@ -22,6 +24,7 @@
    [:receiptHandle :string]
    [:attributes
     [:map
+     {:closed true}
      [:ApproximateReceiveCount :string]
      [:SentTimestamp :string]
      [:SequenceNumber :string]
