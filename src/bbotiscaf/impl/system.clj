@@ -1,59 +1,29 @@
 (ns bbotiscaf.impl.system
   (:require [integrant.core :as ig]
             [babashka.fs :as fs]
-            [babashka.classpath :as cp]
             [bbotiscaf.misc :refer [ex->map]]
+            [bbotiscaf.impl.config :as conf]
             ;; [bbotiscaf.impl.api]
             [bbotiscaf.impl.e2e]
-            [malli.core :as m]
+            [malli.instrument :as mi]
             [clojure.edn :as edn]
-            [clojure.string :as str]
             [clojure.java.io :as io]
-            [aero.core :refer [read-config]]
             [taoensso.timbre :as log]
             [pod.huahaiy.datalevin :as d]))
 
 (def app (atom nil))
 
-(defn- validate-project-config!
-  [conf]
-  (let [forbidden-keys [:api]]
-    (doseq [k forbidden-keys]
-      (when (contains? conf k)
-        (let [ex (ex-info "Forbiden key in project config!" {:key k})]
-          (log/error ::forbidden-config-key
-                     (.getMessage ex)
-                     {:project-config conf
-                      :error (ex->map ex)})
-          (throw ex))))))
-
-(defn- get-config
-  []
-  (let [profile (or (some-> "BBOTISCAF_PROFILE"
-                            System/getenv
-                            str/lower-case
-                            keyword)
-                    :aws)
-        bbotiscaf-config (read-config (io/resource "bbotiscaf-resources/config.edn") {:profile profile})
-        project-config   (try (read-config (io/resource "config.edn") {:profile profile})
-                              (catch Exception ex
-                                (log/warn ::no-config-file
-                                          "No 'config.edn' file!"
-                                          {:error (ex->map ex)})
-                                {}))]
-    (validate-project-config! project-config)
-    (let [config (merge bbotiscaf-config project-config)]
-      (log/info ::config-loaded
-                "Configuration loaded"
-                {:profile profile
-                 :bbotiscaf-config bbotiscaf-config
-                 :project-config project-config
-                 :full-config config})
-      config)))
+(defn- malli-instrument-error-handler [error data]
+  (log/error ::malli-instrument-error
+             "Malli instrumentation error in function '%s'!" (:fn-name data)
+             {:error error
+              :data data})
+  (throw (ex-info "Malli instrumentation error" {:error error :data data})))
 
 (defn startup!
   []
-  (let [config (get-config)]
+  (mi/instrument! {:report malli-instrument-error-handler})
+  (let [config (conf/get-config)]
     (reset! app (ig/init config))
     (log/info ::startup-completed
               "Startup completed: %s" @app
@@ -94,9 +64,13 @@
               :closed-schema? true
               :auto-entity-time? true}]
     (log/info ::apply-db-conn
-              "Applying :db/conn %s...\nSchema:\t%s" conn-str schema
+              "Applying :db/conn %s..." conn-str
               {:conn-str conn-str
                :schema schema
                :opts opts})
     (d/get-conn conn-str schema #_opts)))
+
+(defmethod ig/init-key :bot/token
+  [_ token]
+  token)
 
