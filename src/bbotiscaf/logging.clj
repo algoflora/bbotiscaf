@@ -43,18 +43,15 @@
    :fn         (fn [{:keys [level ?err vargs ?ns-str
                             ?file hostname_ timestamp_ ?line]}]
                  (let [data (process-vargs vargs)]
-                   (println (format "%s [%s] <%s:%s:%s> - %s%s%s"
+                   (println (format "%s [%s] <%s:%s:%s> - %s%s"
                                     @timestamp_
                                     (-> level name str/upper-case)
                                     @hostname_
                                     (or ?ns-str ?file "?")
                                     (or ?line "?")
-                                    (if (:event-name data)
-                                      (str (:event-name data)
-                                           (if (not-empty (:message-text data))
-                                             " - " "")) "")
                                     (if (not-empty (:message-text data))
-                                      (:message-text data) "")
+                                      (:message-text data)
+                                      (str (:event-name data)))
                                     (if ?err
                                       (str "\n" (.getStacktrace ?err)) "")
                                     ))))})

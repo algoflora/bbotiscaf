@@ -2,4 +2,13 @@
  :deps {metosin/malli {:mvn/version "0.16.1"}
         com.taoensso/timbre {:mvn/version "6.5.0"}
         integrant/integrant {:mvn/version "0.10.0"}
-        aero/aero {:mvn/version "1.1.6"}}}
+        aero/aero {:mvn/version "1.1.6"}
+        lambdaisland/kaocha {:mvn/version "1.91.1392"}}
+ :pods {huahaiy/datalevin {:version "0.9.10"}}
+
+ :tasks
+ {
+  test {:doc "Runs tests with Kaocha"
+        :task (shell {:extra-env {"BBOTISCAF_PROFILE" "test"
+                                  "BBOTISCAF_TEST_UUID" (java.util.UUID/randomUUID)}}
+                     "bb -m kaocha.runner --config-file tests.edn")}}}

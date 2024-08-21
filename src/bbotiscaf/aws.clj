@@ -1,14 +1,15 @@
 (ns bbotiscaf.aws
-  (:require [babashka.filesystem :as fs]
+  (:require [babashka.fs :as fs]
             [malli.core :as m]
+            [clojure.string :as str]
             [bbotiscaf.spec.core :as spec]
             [bbotiscaf.blambda.api :refer [build-all]]
             [bbotiscaf.blambda.api.terraform :refer [write-config apply!]]))
 
 (defn- get-tree
   [dir]
-  (->> (fs/list-dir dir {:recursive true})
-       (filter fs/regular-file?)))
+  (->> (fs/glob dir "**.*")
+       (filter #(boolean (re-find #".*[^~#]$" (fs/extension %))))))
 
 (def default-opts
   {:bb-arch "arm64"
