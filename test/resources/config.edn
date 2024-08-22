@@ -1,1 +1,5 @@
-{:bot/token "0000000000:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"}
+{:bot/token "0000000000:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+ :handler/namespaces [bbotiscaf.e2e-test.handlers]
+
+ :handler/main bbotiscaf.e2e-test.handlers/main}

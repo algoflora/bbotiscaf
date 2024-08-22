@@ -11,7 +11,13 @@
             [taoensso.timbre :as log]
             [pod.huahaiy.datalevin :as d]))
 
-(def app (atom nil))
+(def ^:private app (atom nil))
+
+(defn get-db-conn [] (:db/conn @app))
+
+(defn get-main-handler [] (:handler/main @app))\
+
+(defn get-handler-namespaces [] (:handler/namespaces @app))
 
 (defn- malli-instrument-error-handler [error data]
   (log/error ::malli-instrument-error
@@ -51,11 +57,11 @@
            (apply merge)))
 
 (defmethod ig/init-key :api/fn
-  [_ sym]
+  [_ symbol]
   (log/info ::apply-api-fn
-            "Applying :api/fn %s... %s" sym (ns-resolve (symbol "bbotiscaf.impl.e2e") 'request)
-            {:sym sym})
-  (find-var sym))
+            "Applying :api/fn %s..." symbol
+            {:symbol symbol})
+  (find-var symbol))
 
 (defmethod ig/init-key :db/conn
   [_ conn-str]
@@ -74,3 +80,10 @@
   [_ token]
   token)
 
+(defmethod ig/init-key :handler/namespaces
+  [_ namespaces]
+  namespaces)
+
+(defmethod ig/init-key :handler/main
+  [_ main]
+  main)

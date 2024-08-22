@@ -4,7 +4,7 @@
 
 (def request-schema
   [:or
-   spec.tg/update-schema
+   spec.tg/Update
    spec.act/action-request-schema])
 
 (def user-opts

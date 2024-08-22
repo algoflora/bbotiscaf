@@ -1,5 +1,6 @@
 (ns bbotiscaf.core
   (:require [actions]
+            [bbotiscaf.impl.handler :as h]
             [bbotiscaf.logging :as logging]
             [taoensso.timbre :as log]
             [cheshire.core :as json]
@@ -9,11 +10,6 @@
             [bbotiscaf.spec.aws :as spec.aws]
             [bbotiscaf.spec.telegram :as spec.tg]
             [bbotiscaf.spec.action :as spec.act]))
-
-(m/=> handle-update [:-> spec.tg/update-schema :nil])
-(defn- handle-update
-  [update]
-  (log/info "Update:\t%s " update {:request update}))
 
 (m/=> handle-action [:-> spec.act/action-request-schema :nil])
 (defn- handle-action
@@ -37,8 +33,8 @@
 (defn- handler
   [req]
   (cond
-    (m/validate spec.tg/update-schema req)
-    (handle-update req)
+    (m/validate spec.tg/Update req)
+    (h/handle-update req)
   
     (m/validate spec.act/action-request-schema req)
     (handle-action req)))
