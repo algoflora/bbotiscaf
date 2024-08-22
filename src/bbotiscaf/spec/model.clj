@@ -7,7 +7,7 @@
    [:user/uuid :uuid]
    [:user/username {:optional true} :string]
    [:user/id :int]
-   [:user/furst-name :string]
+   [:user/first-name :string]
    [:user/last-name {:optional true} :string]
    [:user/language-code {:optional true} :string]
    [:user/msg-id {:optional true} :int]])

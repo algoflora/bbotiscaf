@@ -2,10 +2,10 @@
   (:require [bbotiscaf.spec.telegram :as spec.tg]
             [bbotiscaf.spec.action :as spec.act]))
 
-(def request-schema
+(def Request
   [:or
    spec.tg/Update
-   spec.act/action-request-schema])
+   spec.act/Action-Request])
 
 (def user-opts
   [:map

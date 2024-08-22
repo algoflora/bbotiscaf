@@ -4,7 +4,7 @@
 
 (def registry (merge (m/default-schemas) (mu/schemas)))
 
-(def user-schema
+(def User-tg
   [:map
    [:id :int]
    [:is_bot :boolean]
@@ -14,9 +14,9 @@
    [:language_code {:optional true} :string]
    [:is_premium {:optional true} [:= true]]])
 
-(def chat-schema
+(def Chat
   [:map
-   [:id int?]
+   [:id :int]
    [:type [:enum "private" "group" "supergroup" "channel"]]
    [:title {:optional true} :string]
    [:username {:optional true} :string]
@@ -24,7 +24,7 @@
    [:last_name {:optional true} :string]
    [:is_forum {:optional true} [:= true]]])
 
-(def message-entity-schema
+(def Message-Entity
   [:map
    {:closed true}
    [:type [:enum
@@ -35,7 +35,7 @@
    [:offset :int]
    [:length :int]
    [:url {:optional true} :string]
-   [:user {:optional true} user-schema]
+   [:user {:optional true} User-tg]
    [:language {:optional true} :string]
    [:custom_emoji_id {:optional true} :string]])
 
@@ -43,13 +43,13 @@
   [:map
    {:closed true}
    [:text :string]
-   [:entities [:vector message-entity-schema]]])
+   [:entities {:optional true} [:vector Message-Entity]]])
 
 (def Base-Message
   [:map
    [:message_id :int]
-   [:from user-schema]
-   [:chat chat-schema]
+   [:from User-tg]
+   [:chat Chat]
    [:date :int]])
 
 (def Text-Message
@@ -60,43 +60,53 @@
    {:registry registry}))
 
 (def Message
-  (m/schema
-   [:merge
-    Base-Message
-    [:or
-     Text]]
-   {:registry registry}))
+  [:or
+   Text-Message])
 
 (def Callback-Query
   [:map
    [:id :string]
-   [:from user-schema]
+   [:from User-tg]
    [:message [:or
               Base-Message
               [:map
-               [:from chat-schema]
+               [:from Chat]
                [:message_id :int]
                [:date [:= 0]]]]]
    [:data [:string {:max 64}]]])
+
+(def Message-Update-Data
+  [:map
+   [:message Message]])
+
+(def Callback-Query-Update-Data
+  [:map
+   [:callback_query Callback-Query]])
+
+(def Update-Data
+  [:or
+   Message-Update-Data
+   Callback-Query-Update-Data])
 
 (def Base-Update
   [:map
    [:update_id :int]])
 
-(def message-update-schema
+(def Message-Update
   (m/schema
    [:merge
     Base-Update
-    [:map
-     [:message Base-Message]]]))
+    Message-Update-Data]
+   {:registry registry}))
+
+(def Callback-Query-Update
+  (m/schema
+   [:merge
+    Base-Update
+    Callback-Query-Update-Data]
+   {:registry registry}))
 
 (def Update
-  (m/schema
-   [:merge
-    Base-Update
-    [:or ;TODO: find XOR schema
-     [:map
-      [:message Base-Message]]
-     [:map
-      [:callback_query Callback-Query]]]]
-   {:registry registry}))
+  [:or
+   Message-Update
+   Callback-Query-Update])

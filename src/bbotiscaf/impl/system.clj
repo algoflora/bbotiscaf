@@ -5,40 +5,35 @@
             [bbotiscaf.impl.config :as conf]
             ;; [bbotiscaf.impl.api]
             [bbotiscaf.impl.e2e]
+            [bbotiscaf.impl.system.app :as app]
+            [malli.core :as m]
             [malli.instrument :as mi]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
             [taoensso.timbre :as log]
             [pod.huahaiy.datalevin :as d]))
 
-(def ^:private app (atom nil))
-
-(defn get-db-conn [] (:db/conn @app))
-
-(defn get-main-handler [] (:handler/main @app))\
-
-(defn get-handler-namespaces [] (:handler/namespaces @app))
 
 (defn- malli-instrument-error-handler [error data]
-  (log/error ::malli-instrument-error
-             "Malli instrumentation error in function '%s'!" (:fn-name data)
-             {:error error
-              :data data})
-  (throw (ex-info "Malli instrumentation error" {:error error :data data})))
+  (let [func (:fn-name data)
+        [info err-str] (cond
+                         (= :malli.core/invalid-input error)
+                         [(m/explain (:input data) (:args data)) "invalid input"]
+
+               :else
+               [{:error error :data data} "instrumentation"])]
+    (log/error ::malli-instrument-error
+               "Malli %s error in function '%s'! %s" err-str func info)
+    (throw (ex-info "Malli instrumentation error" {:error error :info info :function func}))))
 
 (defn startup!
   []
-  (mi/instrument! {:report malli-instrument-error-handler})
-  (let [config (conf/get-config)]
-    (reset! app (ig/init config))
-    (log/info ::startup-completed
-              "Startup completed: %s" @app
-              {:app @app})))
-
-(defn shutdown!
-  []
-  (ig/halt! @app))
-
+  (when-not (app/app-set?)
+    (mi/instrument! {:report malli-instrument-error-handler})
+    (let [config (conf/get-config)]
+      (app/set-app! (ig/init config))
+      (log/info ::startup-completed
+                "Startup completed: %s" (app/get-app)))))
 
 (defn- get-bbotiscaf-schema
   []
@@ -78,12 +73,21 @@
 
 (defmethod ig/init-key :bot/token
   [_ token]
+  (log/info ::apply-bot-token
+            "Applying :bot/token %s..." token
+            {:token token})
   token)
 
 (defmethod ig/init-key :handler/namespaces
   [_ namespaces]
+  (log/info ::apply-handler-namespaces
+            "Applying :handler/namespaces %s..." namespaces
+            {:namespaces namespaces})
   namespaces)
 
 (defmethod ig/init-key :handler/main
-  [_ main]
-  main)
+  [_ handler]
+  (log/info ::apply-handler-main
+            "Applying :handler/main %s..." handler
+            {:handler handler})
+  handler)

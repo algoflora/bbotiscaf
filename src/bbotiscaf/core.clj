@@ -11,7 +11,7 @@
             [bbotiscaf.spec.telegram :as spec.tg]
             [bbotiscaf.spec.action :as spec.act]))
 
-(m/=> handle-action [:-> spec.act/action-request-schema :nil])
+(m/=> handle-action [:-> spec.act/Action-Request :nil])
 (defn- handle-action
   [{:keys [action] {:keys [type arguments]} :action}]
   (try
@@ -29,14 +29,14 @@
                   :ok false
                   :error (ex->map ex)}))))
 
-(m/=> handler [:-> spec/request-schema :nil])
+(m/=> handler [:-> spec/Request :nil])
 (defn- handler
   [req]
   (cond
     (m/validate spec.tg/Update req)
     (h/handle-update req)
   
-    (m/validate spec.act/action-request-schema req)
+    (m/validate spec.act/Action-Request req)
     (handle-action req)))
 
 (defn- setup-logs!
@@ -45,8 +45,8 @@
   (logging/inject-lambda-context!))
 
 (m/=> sqs-receiver [:=> [:cat
-                         spec.aws/sqs-records-bunch-schema
-                         spec.aws/sqs-context-schema] :nil])
+                         spec.aws/SQS-Records-Bunch
+                         spec.aws/SQS-Context] :nil])
 (defn sqs-receiver
   [records context]
   (setup-logs! context)

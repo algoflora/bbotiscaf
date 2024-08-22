@@ -6,7 +6,7 @@
    [:type :string]
    [:arguments [:map]]])
 
-(def action-request-schema
+(def Action-Request
   [:map
    [:action action-schema]])
 

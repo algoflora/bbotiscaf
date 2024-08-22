@@ -3,23 +3,23 @@
             [malli.core :as m]
             [bbotiscaf.misc :refer [ex->map]]
             [bbotiscaf.spec.model :as spec.mdl]
-            [bbotiscaf.vars :refer [*dtlv* *user*]]
-            [bbotiscaf.impl.system :as sys]
+            [bbotiscaf.dynamic :refer [*dtlv* dtlv *user*]]
+            [bbotiscaf.impl.system.app :as app]
             [pod.huahaiy.datalevin :as d]))
 
 (def require-namespaces
   (delay
-    (let [namespaces (sys/get-handler-namespaces)]
+    (let [namespaces @app/handler-namespaces]
       (log/info ::require-namespaces
                 "Requering namespaces: %s" namespaces
                 {:namespaces namespaces})
       (time (doseq [ns namespaces]
-              (require ns))))))
+            (require ns))))))
 
 (defn callbacks-count
   []
   (first (d/q '[:find  [(count ?cb)]
-                :where [?cb :callback/uuid]] @*dtlv*)))
+                :where [?cb :callback/uuid]] (dtlv))))
 
 (m/=> set-callback
       [:=>
@@ -30,7 +30,7 @@
   ([user f args]
    (set-callback user f args false))
   ([user f args is-service]
-   (set-callback user f args is-service (util.java.UUID/randomUUID)))
+   (set-callback user f args is-service (java.util.UUID/randomUUID)))
   ([user f args is-service uuid]
    (let [args (or args {})]
      (d/transact! *dtlv* [(cond-> {:callback/uuid uuid
@@ -45,7 +45,7 @@
                 :callback        (ffirst (d/q '[:find (pull ?cb [*])
                                                 :in $ ?uuid
                                                 :where [?cb :callback/uuid ?uuid]]
-                                              @*dtlv* uuid))})
+                                              (dtlv) uuid))})
      uuid)))
 
 (m/=> delete [:=> [:cat spec.mdl/User :int] :nil])
@@ -56,7 +56,7 @@
                                  :where
                                  [?cb :callback/message-id ?mid]
                                  [?cb :callback/user [:user/id ?uid]]]
-                               @*dtlv* (:user/id user) mid)]
+                               (dtlv) (:user/id user) mid)]
     (d/transact! *dtlv* (mapv #(vector :db/retractEntity (first %)) db-ids-to-retract))
     ;; TODO: possible perfomance leak
     (log/info ::callbacks-retracted
@@ -78,10 +78,10 @@
                                                         [?cb :callback/uuid ?uuid]
                                                         #_(not [?cb :callback/uuid ?uuids])]
                                                       ;; TODO: Fix Datalevin with not and collections
-                                                      @*dtlv* (:user/id user) mid)))
+                                                      (dtlv) (:user/id user) mid)))
                                 (set uuids))]
-    (d/transact! @*dtlv* (mapv #(vector :db/retractEntity [:callback/uuid %]) uuids-to-retract))
-    (d/transact! @*dtlv* (mapv #(into {} [[:callback/uuid %] [:callback/message-id mid]]) uuids))
+    (d/transact! (dtlv) (mapv #(vector :db/retractEntity [:callback/uuid %]) uuids-to-retract))
+    (d/transact! (dtlv) (mapv #(into {} [[:callback/uuid %] [:callback/message-id mid]]) uuids))
     (log/info ::set-new-message-ids
               "New message ids set to %d Callbacks" (count uuids)
               {:user user
@@ -93,7 +93,12 @@
 (m/=> load-callback [:-> :uuid spec.mdl/Callback])
 (defn- load-callback
   [uuid]
-  (let [callback (d/pull @*dtlv* '[* {:callback/user [*]}] [:callback/uuid uuid])]
+  (let [callback (d/pull (dtlv) '[* {:callback/user [*]}] [:callback/uuid uuid])]
+    (when (nil? callback)
+      (let [ex (ex-info "Callback not found!" {:uuid uuid})]
+        (log/error ::callback-not-found
+                   "Callback not found!"
+                   {:error (ex->map ex)})))
     (log/info ::callback-loaded "Callback loaded" {:callback callback})
     (when (not= (:user/id *user*) (-> callback :callback/user :user/id))
       (let [ex (ex-info "Wrong User attempt to load Callback!" {:user *user* :callback callback})]
@@ -106,7 +111,7 @@
 (defn check-handler!
   [user]
   (let [user-callback (-> user :user/uuid load-callback)
-        main-handler  (sys/get-main-handler)]
+        main-handler  @app/handler-main]
     (when-not (or (= main-handler (:callback/function user-callback))
                   (not-empty (:callback/arguments user-callback)))
       (set-callback user main-handler nil false (:user/uuid user)))))

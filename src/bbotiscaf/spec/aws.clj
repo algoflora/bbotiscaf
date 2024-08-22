@@ -1,6 +1,6 @@
 (ns bbotiscaf.spec.aws)
 
-(def sqs-context-schema
+(def SQS-Context
   [:map
    {:closed true}
    ["content-length" {:optional true} :string]
@@ -33,6 +33,6 @@
      [:MessageDeduplicationId :string]
      [:ApproximateFirstReceiveTimestamp :string]]]])
 
-(def sqs-records-bunch-schema
+(def SQS-Records-Bunch
   [:map
    [:Records [:vector sqs-record-schema]]])

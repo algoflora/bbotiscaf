@@ -1,21 +1,21 @@
 (ns bbotiscaf.impl.user
   (:require [taoensso.timbre :as log]
-            [bbotiscaf.impl.callback :as clb]
-            [bbotiscaf.vars :refer [*dtlv*]]
+            [bbotiscaf.impl.system.app :as app]
+            [bbotiscaf.dynamic :refer [*dtlv* dtlv]]
             [pod.huahaiy.datalevin :as d]))
 
 (defn get-list
   []
   (d/q '[:find (pull ?u [*])
-         :where [?u :user/username]] @*dtlv*))
+         :where [?u :user/username]] (dtlv)))
 
 (defn load-by-username
   [username]
-  (d/pull @*dtlv* '[*] [:user/username username]))
+  (d/pull (dtlv) '[*] [:user/username username]))
 
 (defn- load-by-udata
   [udata]
-  (d/pull @*dtlv* '[*] [:user/id (:id udata)]))
+  (d/pull (dtlv) '[*] [:user/id (:id udata)]))
 
 (defn- is-new-udata?
   [udata user]
@@ -42,14 +42,21 @@
 
 (defn- create
   [udata]
-  (d/transact! *dtlv* [(->> {:user/uuid (java.util.UUID/randomUUID)
-                             :user/id (:id udata)
-                             :user/username (:username udata)
-                             :user/first-name (:first_name udata)
-                             :user/last-name (:last_name udata)
-                             :user/language-code (:language_code udata)}
-                            (filter #(-> % second some?))
-                            (into {}))])
+  (let [uuid (java.util.UUID/randomUUID)]
+    (d/transact! *dtlv* [(->> {:db/id -1
+                               :user/uuid uuid
+                               :user/id (:id udata)
+                               :user/username (:username udata)
+                               :user/first-name (:first_name udata)
+                               :user/last-name (:last_name udata)
+                               :user/language-code (:language_code udata)}
+                              (filter #(-> % second some?))
+                              (into {}))
+                         {:callback/uuid uuid
+                          :callback/function @app/handler-main
+                          :callback/arguments {}
+                          :callback/user {:db/id -1}
+                          :callback/is-service false}]))
   (let [user (load-by-udata udata)]
     (log/info ::user-created
               "New User created: %s" user

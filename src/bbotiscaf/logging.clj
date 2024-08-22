@@ -3,7 +3,7 @@
             [taoensso.timbre :as timbre]
             [taoensso.timbre.appenders.core :as appenders]))
 
-(def ^:private lambda-context (atom nil))
+(defonce ^:private lambda-context (atom nil))
 
 (defn set-lambda-context! [context]
   (reset! lambda-context context))
