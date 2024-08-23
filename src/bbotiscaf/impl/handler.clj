@@ -43,5 +43,5 @@
   (log/info ::handle-update "Handling Message:\t%s " msg {:message msg})
   (if (and (= "/start" (:text msg)) (some? (:user/msg-id *user*)) (not= 0 (:user/msg-id *user*)))
     (reset)
-    (-> *user* :user/uuid clb/call)))
+    (-> *user* :user/uuid (clb/call msg))))
 

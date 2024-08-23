@@ -1,7 +1,6 @@
 (ns bbotiscaf.aws
   (:require [babashka.fs :as fs]
             [malli.core :as m]
-            [clojure.string :as str]
             [bbotiscaf.spec.core :as spec]
             [bbotiscaf.blambda.api :refer [build-all]]
             [bbotiscaf.blambda.api.terraform :refer [write-config apply!]]))
@@ -26,7 +25,7 @@
    :lambda-runtime "provided.al2023"
    :lambda-timeout 5
    :runtime-layer-name "blambda-layer"
-   :source-dir "src"
+   :source-dir "."
    :source-files (into [] (concat (get-tree "./src") (get-tree "./resources")))
    :target-dir "target"
    :tf-config-dir "."

@@ -3,6 +3,7 @@
             [babashka.process :refer [shell]]
             [bbotiscaf.blambda.internal :as lib]
             [clojure.java.io :as io]
+            [clojure.string :as str]
             [selmer.parser :as selmer]))
 
 (defn tf-config-path [{:keys [target-dir tf-config-dir]} filename]
@@ -10,7 +11,7 @@
     (fs/file tf-dir filename)))
 
 (defn generate-module [opts]
-  (selmer/render (slurp (io/resource "lambda_layer.tf")) opts))
+  (selmer/render (slurp (io/resource "blambda/lambda_layer.tf")) opts))
 
 (defn generate-vars
   [opts]
@@ -18,7 +19,7 @@
         lambda-zipfile (lib/lambda-zipfile opts)
         deps-zipfile (lib/deps-zipfile opts)]
     (selmer/render
-     (slurp (io/resource "blambda" "blambda.tfvars"))
+     (slurp (io/resource "blambda/blambda.tfvars"))
      (merge opts
             {:runtime-layer-compatible-architectures (lib/runtime-layer-architectures opts)
              :runtime-layer-compatible-runtimes (lib/runtime-layer-runtimes opts)
@@ -32,7 +33,7 @@
 (defn run-tf-cmd!
   ([opts cmd] (run-tf-cmd! opts cmd false))
   ([opts cmd continue?]
-   (let [config-file (tf-config-path opts "blambda.tf")]
+   (let [config-file (tf-config-path opts "lambda.tf")]
      (when-not (fs/exists? config-file)
        (throw
         (ex-info
@@ -48,7 +49,7 @@
     (run-tf-cmd! opts "terraform init")
     (run-tf-cmd! opts (str "terraform workspace new " cluster-workspace) true)
     (run-tf-cmd! opts (str "terraform workspace select " cluster-workspace))
-    (run-tf-cmd! opts "terraform apply -auto-approve")
+    (run-tf-cmd! opts "terraform apply" #_" -auto-approve")
     (run-tf-cmd! opts (str "terraform workspace new " lambda-workspace) true)
     (run-tf-cmd! opts (str "terraform workspace select " lambda-workspace))
     (run-tf-cmd! opts "terraform apply -auto-approve")
@@ -71,7 +72,7 @@
     (fs/create-dirs module-dir)
     (doseq [filename ["cluster.tf" "lambda.tf"]
             :let [target (fs/file target-dir filename)
-                  content (selmer/render (slurp (io/resource "blambda" filename))
+                  content (selmer/render (slurp (io/resource (str "blambda/" filename)))
                                          (assoc opts :lambda-env-vars env-vars))]]
       (println "Applying Terraform config" (str filename))
       (fs/delete-if-exists target)
@@ -80,3 +81,7 @@
     (spit vars-file lambda-layer-vars)
     (println "Writing lambda layers module:" (str module-file))
     (spit module-file lambda-layer-module)))
+
+(comment
+  (require '[bbotiscaf.aws :as aws])
+  (aws/deploy! {:lambda-name "lambda" :cluster "cluster"}))

@@ -22,10 +22,17 @@
                 :where [?cb :callback/uuid]] (dtlv))))
 
 (m/=> set-callback
-      [:=>
-       [:cat
-        spec.mdl/User :symbol [:or :nil :map] [:boolean {:optional true}] [:uuid {:optional true}]]
-       :uuid])
+      [:function
+       [:=> [:cat spec.mdl/User :symbol [:or :nil :map]] :uuid]
+       [:=> [:cat spec.mdl/User :symbol [:or :nil :map] [:boolean {:optional true}]] :uuid]
+       [:=> [:cat
+             spec.mdl/User
+             :symbol
+             [:or :nil :map]
+             [:boolean {:optional true}]
+             [:uuid {:optional true}]]
+        :uuid]])
+
 (defn set-callback
   ([user f args]
    (set-callback user f args false))
@@ -66,7 +73,7 @@
               :to-retract      db-ids-to-retract
               :callbacks-count (callbacks-count))))
 
-(m/=> set-new-message-ids [:=> [:cat spec.mdl/User :int [:vector :uuid]] :nil])
+(m/=> set-new-message-ids [:=> [:cat spec.mdl/User [:or :int :nil] [:vector :uuid]] :nil])
 (defn set-new-message-ids
   [user mid uuids]
   (let [uuids-to-retract (apply disj
@@ -116,13 +123,16 @@
                   (not-empty (:callback/arguments user-callback)))
       (set-callback user main-handler nil false (:user/uuid user)))))
 
-(m/=> call [:-> :uuid :nil])
+(m/=> call [:function
+            [:=> [:cat :uuid] :nil]
+            [:=> [:cat :uuid :map] :nil]])
 (defn call
-  [^java.util.UUID uuid]
-  (let [_ @require-namespaces
-        callback (load-callback uuid)
-        func (:callback/function callback)
-        args (:callback/arguments callback)]
-    (when-not (true? (:callback/is-service callback))
-      (check-handler! *user*))
-    ((find-var func) args)))
+  ([uuid] (call uuid {}))
+  ([uuid args]
+   (let [_ @require-namespaces
+         callback (load-callback uuid)
+         func (:callback/function callback)
+         args (merge (:callback/arguments callback) args)]
+     (when-not (true? (:callback/is-service callback))
+       (check-handler! *user*))
+     ((find-var func) args))))

@@ -15,6 +15,10 @@
     (throw (ex-info  "Attempt to reassign app state!" {:incoming-data data})))
   (reset! app data))
 
+(def bot-token (delay (:bot/token @app)))
+
+(def api-fn (delay (:api/fn @app)))
+
 (def db-conn (delay (:db/conn @app)))
 
 (def handler-main (delay (:handler/main @app)))\

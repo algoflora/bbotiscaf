@@ -43,7 +43,7 @@
               m2-dir "m2-repo"
               pods-dir ".babashka"
               {:keys [deps pods]} (-> deps-path slurp edn/read-string)
-              pods (merge pods {huahaiy/datalevin {:version datalevin-version}})]
+              pods (merge pods {'huahaiy/datalevin {:version datalevin-version}})]
           (if (and (empty? deps) (empty? pods))
             (println (format "\nNot building dependencies layer: no deps or pods listed in %s"
                              (str deps-path)))

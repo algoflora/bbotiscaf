@@ -1,6 +1,5 @@
 {:paths ["src" "resources"]
  :deps {metosin/malli {:mvn/version "0.16.3"}
-        com.taoensso/timbre {:mvn/version "6.5.0"}
         integrant/integrant {:mvn/version "0.10.0"}
         aero/aero {:mvn/version "1.1.6"}
         tick/tick {:mvn/version "0.7.5"}
@@ -9,9 +8,21 @@
 
  :tasks
  {test {:doc "Runs tests with Kaocha"
-        :requires ([babashka.fs :as fs]
-                   [babashka.classpath :as cp])
-        :task (shell {:extra-env {"BBOTISCAF_PROFILE" "test"
-                                  "BBOTISCAF_TEST_UUID" (java.util.UUID/randomUUID)}}
-                     (format "bb --classpath %s -m kaocha.runner --config-file tests.edn"
-                             (str (cp/get-classpath) ":" (fs/absolutize "test/resources"))))}}}
+         :requires ([babashka.fs :as fs]
+                    [babashka.classpath :as cp])
+         :task (shell {:extra-env {"BBOTISCAF_PROFILE" "test"
+                                   "BBOTISCAF_TEST_UUID" (java.util.UUID/randomUUID)}}
+                      (format "bb --classpath %s -m kaocha.runner --config-file tests.edn"
+                              (str (cp/get-classpath) ":" (fs/absolutize "test/resources"))))}}}
+
+;; :aliases
+;;  {:babashka/dev
+;;   {:extra-deps {org.babashka/cli {:mvn/version "0.4.39"}}
+;;    :extra-paths ["test" "test/resources"]
+;;    ;:main-opts ["-m" "kaocha.runner" "--config-file" "tests.edn"]
+;;    }}
+
+;; test-clj {:doc "Runs tests with Kaocha in JVM"
+;;             :task (clojure {:extra-env {"BBOTISCAF_PROFILE" "test"
+;;                                         "BBOTISCAF_TEST_UUID" (java.util.UUID/randomUUID)}}
+;;                            "-M:test")}

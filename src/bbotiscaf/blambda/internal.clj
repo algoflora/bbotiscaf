@@ -51,16 +51,20 @@
 
 (defn copy-files! [{:keys [source-dir work-dir resource?] :as opts}
                    filenames]
+  (println "FILENAMES" filenames)
   (doseq [f filenames
           :let [source-file (cond
-                              resource? (io/resource f)
+                              resource? (io/resource (str "blambda/" f))
                               source-dir (fs/file source-dir f)
                               :else f)
                 parent (if (and work-dir (fs/parent f)) (fs/file work-dir (fs/parent f)) (fs/parent f))]]
+    (println "SOURCEFILE" source-file)
     (println "Adding file:" (str f))
     (when parent
       (fs/create-dirs parent))
     (fs/delete-if-exists (fs/file work-dir f))
     (if parent
       (fs/copy source-file parent)
-      (fs/copy source-file work-dir))))
+      (do
+        (println "DO" source-file work-dir)
+        (fs/copy source-file work-dir)))))
