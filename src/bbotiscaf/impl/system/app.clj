@@ -1,5 +1,5 @@
 (ns bbotiscaf.impl.system.app
-  (:require [taoensso.timbre :as log]
+  (:require [bbotiscaf.misc :refer [throw-error]]
             [integrant.core :as ig]))
 
 (defonce ^:private app (atom nil))
@@ -10,18 +10,20 @@
 
 (defn set-app! [data]
   (when (app-set?)
-    (log/error ::app-reassign-attempt
-               "Attempt to reassign app state!")
-    (throw (ex-info  "Attempt to reassign app state!" {:incoming-data data})))
+    (throw-error ::app-reassign-attempt
+                 "Attempt to reassign app state!"
+                 {:incoming-data data}))
   (reset! app data))
 
 (def bot-token (delay (:bot/token @app)))
+
+(def default-language-code (delay (:bot/default-language-code @app)))
 
 (def api-fn (delay (:api/fn @app)))
 
 (def db-conn (delay (:db/conn @app)))
 
-(def handler-main (delay (:handler/main @app)))\
+(def handler-main (delay (:handler/main @app)))
 
 (def handler-namespaces (delay (:handler/namespaces @app)))
 

@@ -8,3 +8,5 @@
 (def ^:dynamic *user* nil)
 
 (def ^:dynamic *upd* nil)
+
+(def ^:dynamic *msg* nil)

@@ -2,8 +2,14 @@
   (:require [bbotiscaf.impl.callback :as clb]
             [bbotiscaf.impl.user :as u]
             [bbotiscaf.impl.system.app :as app]
+            [bbotiscaf.spec.model :as spec.mdl]
+            [bbotiscaf.spec.telegram :as spec.tg]
+            [bbotiscaf.misc :refer [throw-error]]
+            [bbotiscaf.button :as b]
+            [bbotiscaf.impl.button :as ib]
             [clojure.walk :as walk]
             [clojure.string :as str]
+            [malli.core :as m]
             [babashka.fs :as fs]
             [cheshire.core :refer [generate-string]]
             [babashka.http-client :as http]
@@ -31,33 +37,19 @@
         (assoc :markdown       (check-opt opts :markdown))
         (assoc :to-edit-msg-id to-edit-msg-id))))
 
-(defmulti ^:private create-key (fn [kdata _] (type kdata)))
-
-(defmethod create-key clojure.lang.PersistentVector
-  [kvec user]
-  (create-key {:text (first kvec)
-               :func (second kvec)
-               :args (nth kvec 2)}
-              user))
-
-(defmethod create-key clojure.lang.PersistentArrayMap
-  [kmap user]
-  (cond-> kmap
-    (every? #(contains? kmap %) [:func :args])
-    (assoc :callback_data (str (clb/set-callback user (:func kmap) (:args kmap))))
-
-    true (dissoc :func)
-    true (dissoc :args)))
-
-(defn- prepare-keyboard
+(m/=> prepare-keyboard [:=>
+                        [:cat
+                         [:vector [:vector [:fn (fn [btn] (instance? b/KeyboardButton btn))]]]
+                         spec.mdl/User
+                         [:or :map :nil]]
+                        [:map
+                         [:inline_keyboard [:vector [:vector spec.tg/Button]]]]])
+(defn prepare-keyboard
   [kbd user optm]
   (when kbd
-    (let [mapf #(cond-> % (and (vector? %) (= 2 (count %))) (conj {}) true (create-key user))]
-      {:inline_keyboard
-       (cond->> kbd
-         true (mapv #(mapv mapf %))
-         (:temp optm) (#(conj % [{:text "✖️"
-                                  :callback_data (str (clb/set-callback user 'bbotiscaf.handler/delete-this-message {} true))}])))})))
+    {:inline_keyboard
+     (cond-> (mapv #(mapv b/to-map %) kbd)
+       (:temp optm) (conj [(ib/->XButton user)]))}))
 
 (defn- set-callbacks-message-id
   [user msg]
@@ -71,7 +63,8 @@
 (defn- to-edit?
   [optm user]
   (when (and (some? (:msg-id user)) (= (:to-edit-msg-id optm) (:msg-id user)))
-    (throw (ex-info "Prohibited way to edit Main Message!" {})))
+    (throw-error ::manual-main-message-edit
+                 "Manual editing of Main Message is forbidden!" {}))
   (if (:temp optm)
     (some? (:to-edit-msg-id optm))
     (and (some? (:user/msg-id user))
@@ -152,8 +145,7 @@
   [_ user data kbd optm]
   (let [argm (prepare-arguments-map data kbd optm user)
         new-msg (api-wrap 'send-invoice argm)]
-    (set-callbacks-message-id user new-msg)
-    new-msg))
+    (set-callbacks-message-id user new-msg)))
 
 (defn- send-message-to-chat
   [argm to-edit??]
@@ -164,13 +156,12 @@
 
 (defmethod send-to-chat :message
   [_ user text kbd optm]
-  (let [argm       (prepare-arguments-map {:text text} kbd optm user)
+  (let [argm       (prepare-arguments-map {:text text :entities []} kbd optm user)
         new-msg    (send-message-to-chat argm (to-edit? optm user))
         new-msg-id (:message_id new-msg)]
     (when (and (not (:temp optm)) (not= new-msg-id (:msg-id user)))
       (u/set-msg-id user new-msg-id))
-    (set-callbacks-message-id user new-msg)
-    new-msg))
+    (set-callbacks-message-id user new-msg)))
 
 (defn prepare-and-send
   [type user data kbd & opts]

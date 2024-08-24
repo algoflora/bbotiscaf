@@ -5,8 +5,9 @@
             [bbotiscaf.spec.telegram :as spec.tg]
             [bbotiscaf.impl.system.app :as app]
             [bbotiscaf.impl.user :as u]
+            [bbotiscaf.impl.api :as api]
             [bbotiscaf.impl.callback :as clb]
-            [bbotiscaf.dynamic :refer [*dtlv* *user* *upd*]]
+            [bbotiscaf.dynamic :refer [*dtlv* *user* *upd* *msg*]]
             [pod.huahaiy.datalevin :as d]))
 
 (defmulti ^:private handle (fn [type _] type))
@@ -40,8 +41,13 @@
 (defmethod handle :message
   [_ msg]
   (validate! spec.tg/Message msg)
-  (log/info ::handle-update "Handling Message:\t%s " msg {:message msg})
+  (log/info ::handle-message "Handling Message:\t%s " msg {:message msg})
   (if (and (= "/start" (:text msg)) (some? (:user/msg-id *user*)) (not= 0 (:user/msg-id *user*)))
     (reset)
-    (-> *user* :user/uuid (clb/call msg))))
+    (-> *user* :user/uuid (clb/call msg)))
+  (api/delete-message *user* (:message_id msg)))
 
+(defmethod handle :callback_query
+  [_ cbq]
+  (binding [*msg* (-> cbq :message :message_id)]
+    (-> cbq :data java.util.UUID/fromString clb/call)))

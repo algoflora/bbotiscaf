@@ -43,14 +43,26 @@
   [:map
    {:closed true}
    [:text :string]
-   [:entities {:optional true} [:vector Message-Entity]]])
+   [:entities [:vector Message-Entity]]])
+
+(def Button
+  [:map
+   {:closed true}
+   [:text :string]
+   [:url {:optional true} [:re #"^https?://(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)$"]]
+   [:callback_data {:optional true} [:string {:min 1 :max 64}]]
+   [:pay {:optional true} [:= true]]])
 
 (def Base-Message
   [:map
-   [:message_id :int]
-   [:from User-tg]
+   [:message_id {:optional true} :int]
+   [:from  User-tg]
    [:chat Chat]
-   [:date :int]])
+   [:date :int]
+   [:reply_markup {:optional true} [:map
+                                    [:inline_keyboard [:vector
+                                                       [:vector
+                                                        Button]]]]]])
 
 (def Text-Message
   (m/schema
@@ -68,12 +80,12 @@
    [:id :string]
    [:from User-tg]
    [:message [:or
-              Base-Message
+              Message
               [:map
                [:from Chat]
                [:message_id :int]
                [:date [:= 0]]]]]
-   [:data [:string {:max 64}]]])
+   [:data [:string {:min 1 :max 64}]]])
 
 (def Message-Update-Data
   [:map
@@ -110,3 +122,29 @@
   [:or
    Message-Update
    Callback-Query-Update])
+
+(def Base-Request
+  [:map
+   [:chat_id :int]])
+
+(def Send-Message-Request
+  (m/schema
+   [:merge
+    Base-Request
+    [:map
+     [:text :string]
+     [:entities [:vector Message-Entity]]]]
+   {:registry registry}))
+
+(def Delete-Message-Request
+  (m/schema
+   [:merge
+    Base-Request
+    [:map
+     [:message_id :int]]]
+   {:registry registry}))
+
+(def Request
+  [:or
+   Send-Message-Request
+   Delete-Message-Request])

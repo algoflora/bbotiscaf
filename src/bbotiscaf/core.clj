@@ -5,7 +5,7 @@
             [taoensso.timbre :as log]
             [cheshire.core :as json]
             [malli.core :as m]
-            [bbotiscaf.misc :refer [ex->map]]
+            [bbotiscaf.misc :refer [throw-error]]
             [bbotiscaf.spec.core :as spec]
             [bbotiscaf.spec.aws :as spec.aws]
             [bbotiscaf.spec.telegram :as spec.tg]
@@ -23,11 +23,7 @@
                  :response (action-fn arguments)})
       (throw (ex-info "Wrong action type!" {:action-type type})))
     (catch Exception ex
-      (log/error ::action-failure
-                 (.getMessage ex)
-                 {:action action
-                  :ok false
-                  :error (ex->map ex)}))))
+      (throw-error ::wrong-action-type (ex-message ex) (ex-data ex)))))
 
 (m/=> handler [:-> spec/Request :nil])
 (defn- handler

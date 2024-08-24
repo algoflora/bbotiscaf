@@ -1,6 +1,6 @@
 (ns bbotiscaf.spec.commons)
 
-(def error-schema
+(def Error
   [:map
    [:message :string]
    [:data [:maybe [:map]]]

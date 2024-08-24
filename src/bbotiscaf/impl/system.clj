@@ -1,30 +1,24 @@
 (ns bbotiscaf.impl.system
   (:require [integrant.core :as ig]
-            [babashka.fs :as fs]
-            [bbotiscaf.misc :refer [ex->map]]
             [bbotiscaf.impl.config :as conf]
             ;; [bbotiscaf.impl.api]
             [bbotiscaf.impl.e2e]
             [bbotiscaf.impl.system.app :as app]
-            [malli.core :as m]
+            [bbotiscaf.misc :refer [read-resource-dir throw-error]]
             [malli.instrument :as mi]
-            [clojure.edn :as edn]
+            [malli.core :as m]
             [clojure.java.io :as io]
+            [clojure.edn :as edn]
             [taoensso.timbre :as log]
             [pod.huahaiy.datalevin :as d]))
 
 
 (defn- malli-instrument-error-handler [error data]
   (let [func (:fn-name data)
-        [info err-str] (cond
-                         (= :malli.core/invalid-input error)
-                         [(m/explain (:input data) (:args data)) "invalid input"]
-
-               :else
-               [{:error error :data data} "instrumentation"])]
-    (log/error ::malli-instrument-error
-               "Malli %s error in function '%s'! %s" err-str func info)
-    (throw (ex-info "Malli instrumentation error" {:error error :info info :function func}))))
+        expl (m/explain (:schema data) (:value data))]
+    (throw-error ::malli-instrument-error
+                 (format "Malli instrument error in function '%s'!" func)
+                 {:funtion func :explanation expl :error error :data data})))
 
 (defn startup!
   []
@@ -42,15 +36,6 @@
       slurp
       edn/read-string))
 
-(defn- get-project-schema
-  []
-  (some->> (some-> "schema"
-                   io/resource
-                   (fs/glob "**.edn")
-                   flatten)
-           (map #(-> % slurp edn/read-string))
-           (apply merge)))
-
 (defmethod ig/init-key :api/fn
   [_ symbol]
   (log/info ::apply-api-fn
@@ -60,7 +45,7 @@
 
 (defmethod ig/init-key :db/conn
   [_ conn-str]
-  (let [schema (merge (get-bbotiscaf-schema) (get-project-schema))
+  (let [schema (merge (get-bbotiscaf-schema) (read-resource-dir "schema"))
         opts {:validate-data? true
               :closed-schema? true
               :auto-entity-time? true}]
@@ -77,6 +62,13 @@
             "Applying :bot/token %s..." token
             {:token token})
   token)
+
+(defmethod ig/init-key :bot/default-language-code
+  [_ code]
+  (log/info ::apply-bot-default-language-code
+            "Applying :bot/default-language-code %s..." code
+            {:code code})
+  code)
 
 (defmethod ig/init-key :handler/namespaces
   [_ namespaces]

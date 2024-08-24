@@ -1,7 +1,7 @@
 (ns bbotiscaf.impl.callback
   (:require [taoensso.timbre :as log]
             [malli.core :as m]
-            [bbotiscaf.misc :refer [ex->map]]
+            [bbotiscaf.misc :refer [throw-error]]
             [bbotiscaf.spec.model :as spec.mdl]
             [bbotiscaf.dynamic :refer [*dtlv* dtlv *user*]]
             [bbotiscaf.impl.system.app :as app]
@@ -68,10 +68,10 @@
     ;; TODO: possible perfomance leak
     (log/info ::callbacks-retracted
               "%d Callbacks retracted by 'delete'" (count db-ids-to-retract)
-              :message-id      mid
-              :retracted-count (count db-ids-to-retract)
-              :to-retract      db-ids-to-retract
-              :callbacks-count (callbacks-count))))
+              {:message-id      mid
+               :retracted-count (count db-ids-to-retract)
+               :to-retract      db-ids-to-retract
+               :callbacks-count (callbacks-count)})))
 
 (m/=> set-new-message-ids [:=> [:cat spec.mdl/User [:or :int :nil] [:vector :uuid]] :nil])
 (defn set-new-message-ids
@@ -102,16 +102,12 @@
   [uuid]
   (let [callback (d/pull (dtlv) '[* {:callback/user [*]}] [:callback/uuid uuid])]
     (when (nil? callback)
-      (let [ex (ex-info "Callback not found!" {:uuid uuid})]
-        (log/error ::callback-not-found
-                   "Callback not found!"
-                   {:error (ex->map ex)})))
+      (throw-error ::callback-not-found "Callback not found!" {:uuid uuid}))
     (log/info ::callback-loaded "Callback loaded" {:callback callback})
     (when (not= (:user/id *user*) (-> callback :callback/user :user/id))
-      (let [ex (ex-info "Wrong User attempt to load Callback!" {:user *user* :callback callback})]
-        (log/error ::wrong-user-callback-call
+      (throw-error ::wrong-user-callback-call
                    "Wrong User attempt to load Callback!"
-                   {:error (ex->map ex)})))
+                   {:user *user* :callback callback}))
     callback))
 
 (m/=> check-handler! [:-> spec.mdl/User :nil])

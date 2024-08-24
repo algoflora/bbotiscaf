@@ -5,8 +5,8 @@
             [babashka.pods :as pods]
             [babashka.process :refer [shell]]
             [bbotiscaf.blambda.internal :as lib]
-            [clojure.edn :as edn]
             [clojure.java.io :as io]
+            [clojure.edn :as edn]
             [clojure.string :as str]))
 
 (defn fetch-pods [{:keys [bb-arch source-dir work-dir] :as opts} pods]

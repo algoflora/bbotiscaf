@@ -6,22 +6,22 @@
             [aero.core :refer [read-config]]
             [bbotiscaf.spec.app :as spec.app]))
 
-(def ^:private profile (some-> "BBOTISCAF_PROFILE"
-                               System/getenv
-                               str/lower-case
-                               keyword))
+(def profile (some-> "BBOTISCAF_PROFILE"
+                     System/getenv
+                     str/lower-case
+                     keyword))
 
-(m/=> get-bbotiscaf-config [:=> [:cat] spec.app/bbotiscaf-config-schema])
+(m/=> get-bbotiscaf-config [:=> [:cat] spec.app/Bbotiscaf-Config])
 (defn- get-bbotiscaf-config
   []
   (read-config (io/resource "bbotiscaf-resources/config.edn") {:profile profile}))
 
-(m/=> get-project-config [:=> [:cat] spec.app/project-config-schema])
+(m/=> get-project-config [:=> [:cat] spec.app/Project-Config])
 (defn- get-project-config
   []
   (read-config (io/resource "config.edn") {:profile profile}))
 
-(m/=> get-config [:=> [:cat] spec.app/config-schema])
+(m/=> get-config [:=> [:cat] spec.app/Config])
 (defn get-config
   []
   (let [bbotiscaf-config (get-bbotiscaf-config)

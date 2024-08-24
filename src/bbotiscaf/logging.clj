@@ -53,7 +53,7 @@
                                       (:message-text data)
                                       (str (:event-name data)))
                                     (if ?err
-                                      (str "\n" (.getStacktrace ?err)) "")
+                                      (str "\n" (.getStackTrace ?err)) "")
                                     ))))})
 
 (timbre/merge-config! {:appenders {:println (lambda-stdout-appender)}})
