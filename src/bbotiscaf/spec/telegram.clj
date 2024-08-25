@@ -4,7 +4,7 @@
 
 (def registry (merge (m/default-schemas) (mu/schemas)))
 
-(def User-tg
+(def User
   [:map
    [:id :int]
    [:is_bot :boolean]
@@ -35,7 +35,7 @@
    [:offset :int]
    [:length :int]
    [:url {:optional true} :string]
-   [:user {:optional true} User-tg]
+   [:user {:optional true} User]
    [:language {:optional true} :string]
    [:custom_emoji_id {:optional true} :string]])
 
@@ -56,7 +56,7 @@
 (def Base-Message
   [:map
    [:message_id {:optional true} :int]
-   [:from  User-tg]
+   [:from  User]
    [:chat Chat]
    [:date :int]
    [:reply_markup {:optional true} [:map
@@ -78,7 +78,7 @@
 (def Callback-Query
   [:map
    [:id :string]
-   [:from User-tg]
+   [:from User]
    [:message [:or
               Message
               [:map

@@ -1,20 +1,11 @@
 (ns bbotiscaf.impl.e2e
-  (:require [bbotiscaf.core :as bbot]
-            [bbotiscaf.spec.telegram :as spec.tg]
+  (:require [bbotiscaf.spec.telegram :as spec.tg]
             [bbotiscaf.impl.e2e.dummy :as dum]
             [malli.core :as m]
             [clojure.pprint :refer [pprint]]
             [taoensso.timbre :as log]))
 
-(defonce ^:private update-id (atom 0))
-
 (defmulti ^:private serve (fn [method _] method))
-
-(m/=> send-update [:-> spec.tg/Update-Data :any])
-(defn send-update
-  [data]
-  (let [update (assoc data :update_id (swap! update-id inc))]
-    (#'bbot/handler update)))
 
 (m/=> request [:=> [:cat :keyword spec.tg/Request] :any])
 (defn request

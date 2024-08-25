@@ -3,5 +3,5 @@
 
 (def Dummy-Entry
   [:map
-   [:dummy spec.tg/User-tg]
+   [:dummy spec.tg/User]
    [:messages [:vector spec.tg/Message]]])
