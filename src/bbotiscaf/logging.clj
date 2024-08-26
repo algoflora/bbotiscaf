@@ -1,12 +1,18 @@
 (ns bbotiscaf.logging
-  (:require [clojure.string :as str]
-            [taoensso.timbre :as timbre]
-            [taoensso.timbre.appenders.core :as appenders]))
+  (:require
+    [clojure.stacktrace :as st]
+    [clojure.string :as str]
+    [taoensso.timbre :as timbre]
+    [taoensso.timbre.appenders.core :as appenders]))
 
-(def ^:private lambda-context (atom nil))
 
-(defn set-lambda-context! [context]
+(defonce ^:private lambda-context (atom nil))
+
+
+(defn set-lambda-context!
+  [context]
   (reset! lambda-context context))
+
 
 (defn- process-vargs
   [vargs]
@@ -34,7 +40,9 @@
 
       :else (throw (ex-info "Bad log arguments!" {:log-arguments vargs})))))
 
-(defn lambda-stdout-appender []
+
+(defn lambda-stdout-appender
+  []
   {:enabled?   true
    :async?     false
    :min-level  :info
@@ -43,28 +51,24 @@
    :fn         (fn [{:keys [level ?err vargs ?ns-str
                             ?file hostname_ timestamp_ ?line]}]
                  (let [data (process-vargs vargs)]
-                   (println (format "%s [%s] <%s:%s:%s> - %s%s%s"
+                   (println (format "%s [%s] <%s:%s:%s> - %s%s"
                                     @timestamp_
                                     (-> level name str/upper-case)
                                     @hostname_
                                     (or ?ns-str ?file "?")
                                     (or ?line "?")
-                                    (if (:event-name data)
-                                      (str (:event-name data)
-                                           (if (not-empty (:message-text data))
-                                             " - " "")) "")
                                     (if (not-empty (:message-text data))
-                                      (:message-text data) "")
+                                      (:message-text data)
+                                      (str (:event-name data)))
                                     (if ?err
-                                      (str "\n" (.getStacktrace ?err)) "")
-                                    ))))})
+                                      (str "\n" (with-out-str (st/print-stack-trace ?err)))
+                                      "")))))})
+
 
 (timbre/merge-config! {:appenders {:println (lambda-stdout-appender)}})
 
-(defn inject-lambda-context! []
+
+(defn inject-lambda-context!
+  []
   (timbre/merge-config!
-   {:middleware [#(assoc % :lambda-context @lambda-context)]}))
-
-  
-
-
+    {:middleware [#(assoc % :lambda-context @lambda-context)]}))

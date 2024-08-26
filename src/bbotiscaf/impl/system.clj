@@ -1,0 +1,85 @@
+(ns bbotiscaf.impl.system
+  (:require [integrant.core :as ig]
+            [bbotiscaf.impl.config :as conf]
+            ;; [bbotiscaf.impl.api]
+            [bbotiscaf.impl.e2e]
+            [bbotiscaf.impl.system.app :as app]
+            [bbotiscaf.misc :refer [read-resource-dir throw-error]]
+            [malli.instrument :as mi]
+            [malli.core :as m]
+            [clojure.java.io :as io]
+            [clojure.edn :as edn]
+            [taoensso.timbre :as log]
+            [pod.huahaiy.datalevin :as d]))
+
+
+(defn- malli-instrument-error-handler [error data]
+  (let [func (:fn-name data)
+        expl (m/explain (:schema data) (:value data))]
+    (throw-error ::malli-instrument-error
+                 (format "Malli instrument error in function '%s'!" func)
+                 {:funtion func :explanation expl :error error :data data})))
+
+(defn startup!
+  []
+  (when-not (app/app-set?)
+    (mi/instrument! {:report malli-instrument-error-handler})
+    (let [config (conf/get-config)]
+      (app/set-app! (ig/init config))
+      (log/info ::startup-completed
+                "Startup completed: %s" (app/get-app)))))
+
+(defn- get-bbotiscaf-schema
+  []
+  (-> "bbotiscaf-resources/schema.edn"
+      io/resource
+      slurp
+      edn/read-string))
+
+(defmethod ig/init-key :api/fn
+  [_ symbol]
+  (log/info ::apply-api-fn
+            "Applying :api/fn %s..." symbol
+            {:symbol symbol})
+  (find-var symbol))
+
+(defmethod ig/init-key :db/conn
+  [_ conn-str]
+  (let [schema (merge (get-bbotiscaf-schema) (read-resource-dir "schema"))
+        opts {:validate-data? true
+              :closed-schema? true
+              :auto-entity-time? true}]
+    (log/info ::apply-db-conn
+              "Applying :db/conn %s..." conn-str
+              {:conn-str conn-str
+               :schema schema
+               :opts opts})
+    (d/get-conn conn-str schema #_opts)))
+
+(defmethod ig/init-key :bot/token
+  [_ token]
+  (log/info ::apply-bot-token
+            "Applying :bot/token %s..." token
+            {:token token})
+  token)
+
+(defmethod ig/init-key :bot/default-language-code
+  [_ code]
+  (log/info ::apply-bot-default-language-code
+            "Applying :bot/default-language-code %s..." code
+            {:code code})
+  code)
+
+(defmethod ig/init-key :handler/namespaces
+  [_ namespaces]
+  (log/info ::apply-handler-namespaces
+            "Applying :handler/namespaces %s..." namespaces
+            {:namespaces namespaces})
+  namespaces)
+
+(defmethod ig/init-key :handler/main
+  [_ handler]
+  (log/info ::apply-handler-main
+            "Applying :handler/main %s..." handler
+            {:handler handler})
+  handler)

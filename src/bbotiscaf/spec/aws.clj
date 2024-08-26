@@ -1,7 +1,8 @@
 (ns bbotiscaf.spec.aws)
 
-(def sqs-context-schema
+(def SQS-Context
   [:map
+   {:closed true}
    ["content-length" {:optional true} :string]
    ["content-type" :string]
    ["date" :string]
@@ -12,6 +13,7 @@
 
 (def sqs-record-schema
   [:map
+   {:closed true}
    [:md5OfBody :string]
    [:eventSourceARN :string]
    [:awsRegion :string]
@@ -22,6 +24,7 @@
    [:receiptHandle :string]
    [:attributes
     [:map
+     {:closed true}
      [:ApproximateReceiveCount :string]
      [:SentTimestamp :string]
      [:SequenceNumber :string]
@@ -30,6 +33,6 @@
      [:MessageDeduplicationId :string]
      [:ApproximateFirstReceiveTimestamp :string]]]])
 
-(def sqs-records-bunch-schema
+(def SQS-Records-Bunch
   [:map
    [:Records [:vector sqs-record-schema]]])

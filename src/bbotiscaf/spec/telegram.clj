@@ -1,45 +1,173 @@
-(ns bbotiscaf.spec.telegram)
+(ns bbotiscaf.spec.telegram
+  (:require [malli.core :as m]
+            [malli.util :as mu]))
 
-(def user-schema
+(def registry (merge (m/default-schemas) (mu/schemas)))
+
+(def User
   [:map
    [:id :int]
    [:is_bot :boolean]
    [:first_name :string]
    [:last_name {:optional true} :string]
    [:username {:optional true} :string]
-   [:language_code {:optional true} :string]])
+   [:language_code {:optional true} :string]
+   [:is_premium {:optional true} [:= true]]])
 
-(def chat-schema
+(def Chat
   [:map
-   [:id int?]
+   [:id :int]
    [:type [:enum "private" "group" "supergroup" "channel"]]
    [:title {:optional true} :string]
    [:username {:optional true} :string]
    [:first_name {:optional true} :string]
-   [:last_name {:optional true} :string]])
+   [:last_name {:optional true} :string]
+   [:is_forum {:optional true} [:= true]]])
 
-(def message-schema
+(def Message-Entity
   [:map
-   [:message_id :int]
-   [:from user-schema]
-   [:chat chat-schema]
-   [:date :int]
-   [:text {:optional true} :string]])
+   {:closed true}
+   [:type [:enum
+           "mention" "hashtag" "cashtag" "bot_comand" "url"
+           "email" "phone_number" "bold" "italic" "underline"
+           "strikethrough" "spoiler" "blockquote" "expandable_blockquote"
+           "code" "pre" "text_link" "text_mension" "custom_emoji"]]
+   [:offset :int]
+   [:length :int]
+   [:url {:optional true} :string]
+   [:user {:optional true} User]
+   [:language {:optional true} :string]
+   [:custom_emoji_id {:optional true} :string]])
 
-(def callback_query-schema
+(def Text
+  [:map
+   {:closed true}
+   [:text :string]
+   [:entities [:vector Message-Entity]]])
+
+(def Button
+  [:map
+   {:closed true}
+   [:text :string]
+   [:url {:optional true} [:re #"^https?://(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)$"]]
+   [:callback_data {:optional true} [:string {:min 1 :max 64}]]
+   [:pay {:optional true} [:= true]]])
+
+(def Reply-Markup
+  [:map
+   [:reply_markup {:optional true} [:map
+                                    [:inline_keyboard [:vector
+                                                       [:vector
+                                                        Button]]]]]])
+
+(def Base-Message
+  (m/schema
+   [:merge
+    [:map
+     [:message_id {:optional true} :int]
+     [:from  User]
+     [:chat Chat]
+     [:date :int]]
+    Reply-Markup]
+   {:registry registry}))
+
+(def Text-Message
+  (m/schema
+   [:merge
+    Base-Message
+    Text]
+   {:registry registry}))
+
+(def Message
+  [:or
+   Text-Message])
+
+(def Base-Callback-Query
   [:map
    [:id :string]
-   [:from user-schema]
-   [:message [:or
-              message-schema
-              [:map
-               [:from chat-schema]
-               [:message_id :int]
-               [:date [:= 0]]]]]
-   [:data [:string {:max 64}]]])
+   [:from User]])
 
-(def update-schema
+(def Callback-Query
+  (m/schema
+   [:merge
+    Base-Callback-Query
+    [:map
+     [:message {:optional true} [:or
+                                 Message
+                                 [:map
+                                  [:from User]
+                                  [:message_id :int]
+                                  [:date [:= 0]]]]]
+     [:data {:optional true} [:string {:min 1 :max 64}]]]]
+   {:registry registry}))
+
+(def Message-Update-Data
   [:map
-   [:update_id int?]
-   [:message {:optional true} message-schema]
-   [:callback_query {:optional true} callback_query-schema]])
+   [:message Message]])
+
+(def Callback-Query-Update-Data
+  [:map
+   [:callback_query Callback-Query]])
+
+(def Update-Data
+  [:or
+   Message-Update-Data
+   Callback-Query-Update-Data])
+
+(def Base-Update
+  [:map
+   [:update_id :int]])
+
+(def Message-Update
+  (m/schema
+   [:merge
+    Base-Update
+    Message-Update-Data]
+   {:registry registry}))
+
+(def Callback-Query-Update
+  (m/schema
+   [:merge
+    Base-Update
+    Callback-Query-Update-Data]
+   {:registry registry}))
+
+(def Update
+  [:or
+   Message-Update
+   Callback-Query-Update])
+
+(def Base-Request
+  [:map
+   [:chat_id :int]])
+
+(def Send-Message-Request
+  (m/schema
+   [:merge
+    Base-Request
+    [:map
+     [:text :string]
+     [:entities [:vector Message-Entity]]]
+    Reply-Markup]
+   {:registry registry}))
+
+(def Edit-Message-Text-Request
+  (m/schema
+   [:merge
+    Send-Message-Request
+    [:map
+     [:message_id :int]]]
+   {:registry registry}))
+
+(def Delete-Message-Request
+  (m/schema
+   [:merge
+    Base-Request
+    [:map
+     [:message_id :int]]]
+   {:registry registry}))
+
+(def Request
+  [:or
+   Send-Message-Request
+   Delete-Message-Request])

@@ -9,36 +9,6 @@ variable "lambda_workspace" {
   default = "lambda-{{cluster}}-{{lambda-name}}"
 }
 
-resource "null_resource" "workspace_management" {
-  count = terraform.workspace == "default" ? 1 : 0
-  
-  provisioner "local-exec" {
-    command = <<EOT
-      if ! terraform workspace list | grep -q "${var.cluster_workspace}"; then
-        terraform workspace new "${var.cluster_workspace}"
-      else
-        echo "Workspace ${var.cluster_workspace} already exists"
-      fi
-      terraform workspace select "${var.cluster_workspace}";
-      terraform apply -auto-approve;
-
-      if ! terraform workspace list | grep -q "${var.lambda_workspace}"; then
-        terraform workspace new "${var.lambda_workspace}"
-      else
-        echo "Workspace ${var.lambda_workspace} already exists"
-      fi
-      terraform workspace select "${var.lambda_workspace}";
-      terraform apply -auto-approve;
-
-      terraform workspace select default;
-    EOT
-  }
-
-  triggers = {
-    always_run = "${timestamp()}"
-  }
-}
-
 data "terraform_remote_state" "cluster" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
   
@@ -96,6 +66,14 @@ resource "aws_lambda_function" "lambda-{{lambda-name}}" {
   vpc_config {
     subnet_ids         = data.terraform_remote_state.cluster[0].outputs.aws_subnet_public[*].id
     security_group_ids = [data.terraform_remote_state.cluster[0].outputs.aws_security_group_lambda_shared.id]
+  }
+
+  environment {
+    variables = {
+  {% for i in lambda-env-vars %}
+      {{i.key}} = "{{i.val}}"
+  {% endfor %}
+    }
   }
 
   tags = merge(local.lambda_tags, {

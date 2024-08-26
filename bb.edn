@@ -1,30 +1,20 @@
-{:paths ["src"]
- :deps {net.jmglov/blambda
-        {:git/url "https://github.com/aldebogdanov/blambda.git"
-         :git/sha "82e4d98ff7d552ef207ceb29c0b666bbffb7db26"}}
+{:paths ["src" "resources"]
+ :deps {metosin/malli {:mvn/version "0.16.3"}
+        integrant/integrant {:mvn/version "0.10.0"}
+        aero/aero {:mvn/version "1.1.6"}
+        tick/tick {:mvn/version "0.7.5"}
+        eftest/eftest {:mvn/version "0.6.0"}}
+ :pods {huahaiy/datalevin {:version "0.9.10"}}
+
  :tasks
- {:requires ([blambda.cli :as blambda])
-  blambda {:doc "Controls Blambda runtime and layers"
-           :task (blambda/dispatch
-                  {:bb-arch "arm64"
-                   :deps-layer-name "bbotiscaf-deps"
-                   :use-custom-tf-resources true
-                   :s3-bucket "bbotiscaf"
-                   :lambda-name "test-1"
-                   :lambda-handler "main/handler"
-                   :lambda-timeout 5
-                   :lambda-iam-role "${aws_iam_role.function.arn}"
-                   :extra-tf-config ["tf/lambda.tf"
-                                     "tf/cluster.tf"]
-                   :extra-tf-vars {:cluster "development"
-                                   :tfstate-bucket "bbotiscaf"}
-                   :source-files ["bbotiscaf/core.clj"
-                                  "bbotiscaf/logging.clj"
-                                  "bbotiscaf/misc.clj"
-                                  "bbotiscaf/spec/action.clj"
-                                  "bbotiscaf/spec/aws.clj"
-                                  "bbotiscaf/spec/commons.clj"
-                                  "bbotiscaf/spec/core.clj"
-                                  "bbotiscaf/spec/telegram.clj"
-                                  "actions.clj"
-                                  "main.clj"]})}}}
+ {test {:doc "Runs tests"
+        :extra-paths ["test" "test/resources"]
+        :requires ([eftest.runner :as eftest])
+        :task (do
+                (System/setProperty "bbotiscaf.profile" "test")
+                (System/setProperty "bbotiscaf.test.uuid" (str (java.util.UUID/randomUUID)))
+                (eftest/run-tests
+                  (eftest/find-tests "test")
+                  {:multithread? :vars
+                   :report eftest.report.progress/report}))}}}
+

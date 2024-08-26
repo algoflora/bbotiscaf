@@ -1,12 +1,12 @@
 (ns bbotiscaf.spec.action
-  (:require [bbotiscaf.spec.commons :refer [error-schema]]))
+  (:require [bbotiscaf.spec.commons :refer [Error]]))
 
 (def action-schema
   [:map
    [:type :string]
    [:arguments [:map]]])
 
-(def action-request-schema
+(def Action-Request
   [:map
    [:action action-schema]])
 
@@ -20,7 +20,7 @@
   [:map
    [:action action-schema]
    [:ok [:= false]]
-   [:error error-schema]])
+   [:error Error]])
 
 (def action-response-schema
   [:or
