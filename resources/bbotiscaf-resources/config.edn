@@ -2,6 +2,6 @@
                     :test bbotiscaf.impl.e2e/request}
 
  :db/conn #profile {:aws  "/mnt/efs/dtlv"
-                    :test #join ["/tmp/bbotiscaf-test-dtlv/" #env BBOTISCAF_TEST_UUID]}
+                    :test #join ["/tmp/bbotiscaf-test-dtlv/" #prop bbotiscaf.test.uuid]}
 
  :bot/default-language-code :en}

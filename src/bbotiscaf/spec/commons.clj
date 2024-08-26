@@ -5,4 +5,4 @@
    [:message :string]
    [:data [:maybe [:map]]]
    [:cause [:maybe [:map]]]
-   [:stacktrace [:vector [:fn #(instance? java.lang.StackTraceElement %)]]]])
+   [:stacktrace [:vector [:fn (fn [ste] (instance? java.lang.StackTraceElement ste))]]]])

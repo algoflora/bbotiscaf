@@ -1,12 +1,18 @@
 (ns bbotiscaf.logging
-  (:require [clojure.string :as str]
-            [taoensso.timbre :as timbre]
-            [taoensso.timbre.appenders.core :as appenders]))
+  (:require
+    [clojure.stacktrace :as st]
+    [clojure.string :as str]
+    [taoensso.timbre :as timbre]
+    [taoensso.timbre.appenders.core :as appenders]))
+
 
 (defonce ^:private lambda-context (atom nil))
 
-(defn set-lambda-context! [context]
+
+(defn set-lambda-context!
+  [context]
   (reset! lambda-context context))
+
 
 (defn- process-vargs
   [vargs]
@@ -34,7 +40,9 @@
 
       :else (throw (ex-info "Bad log arguments!" {:log-arguments vargs})))))
 
-(defn lambda-stdout-appender []
+
+(defn lambda-stdout-appender
+  []
   {:enabled?   true
    :async?     false
    :min-level  :info
@@ -53,15 +61,14 @@
                                       (:message-text data)
                                       (str (:event-name data)))
                                     (if ?err
-                                      (str "\n" (.getStackTrace ?err)) "")
-                                    ))))})
+                                      (str "\n" (with-out-str (st/print-stack-trace ?err)))
+                                      "")))))})
+
 
 (timbre/merge-config! {:appenders {:println (lambda-stdout-appender)}})
 
-(defn inject-lambda-context! []
+
+(defn inject-lambda-context!
+  []
   (timbre/merge-config!
-   {:middleware [#(assoc % :lambda-context @lambda-context)]}))
-
-  
-
-
+    {:middleware [#(assoc % :lambda-context @lambda-context)]}))

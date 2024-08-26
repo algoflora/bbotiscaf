@@ -3,13 +3,17 @@
             [clojure.java.io :as io]
             [malli.core :as m]
             [taoensso.timbre :as log]
-            [aero.core :refer [read-config]]
+            [aero.core :refer [read-config reader]]
             [bbotiscaf.spec.app :as spec.app]))
 
-(def profile (some-> "BBOTISCAF_PROFILE"
-                     System/getenv
+(def profile (some-> "bbotiscaf.profile"
+                     System/getProperty
                      str/lower-case
                      keyword))
+
+(defmethod reader 'prop
+ [_ _ value]
+  (System/getProperty (name value)))
 
 (m/=> get-bbotiscaf-config [:=> [:cat] spec.app/Bbotiscaf-Config])
 (defn- get-bbotiscaf-config

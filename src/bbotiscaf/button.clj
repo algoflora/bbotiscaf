@@ -1,10 +1,7 @@
-(ns bbotiscaf.button
-  (:require [malli.core :as m]
-            [bbotiscaf.spec.telegram :as spec.tg]))
+(ns bbotiscaf.button)
 
-;(m/=> to-map [:-> :any spec.tg/Button])
 (defprotocol KeyboardButton
-  (to-map [this]))
+  (to-map [this user]))
 
 (defrecord TextButton [text func args])
 

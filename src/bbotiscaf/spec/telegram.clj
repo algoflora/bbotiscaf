@@ -53,16 +53,23 @@
    [:callback_data {:optional true} [:string {:min 1 :max 64}]]
    [:pay {:optional true} [:= true]]])
 
-(def Base-Message
+(def Reply-Markup
   [:map
-   [:message_id {:optional true} :int]
-   [:from  User]
-   [:chat Chat]
-   [:date :int]
    [:reply_markup {:optional true} [:map
                                     [:inline_keyboard [:vector
                                                        [:vector
                                                         Button]]]]]])
+
+(def Base-Message
+  (m/schema
+   [:merge
+    [:map
+     [:message_id {:optional true} :int]
+     [:from  User]
+     [:chat Chat]
+     [:date :int]]
+    Reply-Markup]
+   {:registry registry}))
 
 (def Text-Message
   (m/schema
@@ -75,17 +82,24 @@
   [:or
    Text-Message])
 
-(def Callback-Query
+(def Base-Callback-Query
   [:map
    [:id :string]
-   [:from User]
-   [:message [:or
-              Message
-              [:map
-               [:from Chat]
-               [:message_id :int]
-               [:date [:= 0]]]]]
-   [:data [:string {:min 1 :max 64}]]])
+   [:from User]])
+
+(def Callback-Query
+  (m/schema
+   [:merge
+    Base-Callback-Query
+    [:map
+     [:message {:optional true} [:or
+                                 Message
+                                 [:map
+                                  [:from User]
+                                  [:message_id :int]
+                                  [:date [:= 0]]]]]
+     [:data {:optional true} [:string {:min 1 :max 64}]]]]
+   {:registry registry}))
 
 (def Message-Update-Data
   [:map
@@ -133,7 +147,16 @@
     Base-Request
     [:map
      [:text :string]
-     [:entities [:vector Message-Entity]]]]
+     [:entities [:vector Message-Entity]]]
+    Reply-Markup]
+   {:registry registry}))
+
+(def Edit-Message-Text-Request
+  (m/schema
+   [:merge
+    Send-Message-Request
+    [:map
+     [:message_id :int]]]
    {:registry registry}))
 
 (def Delete-Message-Request

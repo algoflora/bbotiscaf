@@ -3,26 +3,18 @@
         integrant/integrant {:mvn/version "0.10.0"}
         aero/aero {:mvn/version "1.1.6"}
         tick/tick {:mvn/version "0.7.5"}
-        lambdaisland/kaocha {:mvn/version "1.91.1392"}}
+        eftest/eftest {:mvn/version "0.6.0"}}
  :pods {huahaiy/datalevin {:version "0.9.10"}}
 
  :tasks
- {test {:doc "Runs tests with Kaocha"
-         :requires ([babashka.fs :as fs]
-                    [babashka.classpath :as cp])
-         :task (shell {:extra-env {"BBOTISCAF_PROFILE" "test"
-                                   "BBOTISCAF_TEST_UUID" (java.util.UUID/randomUUID)}}
-                      (format "bb --classpath %s -m kaocha.runner --config-file tests.edn"
-                              (str (cp/get-classpath) ":" (fs/absolutize "test/resources"))))}}}
+ {test {:doc "Runs tests"
+        :extra-paths ["test" "test/resources"]
+        :requires ([eftest.runner :as eftest])
+        :task (do
+                (System/setProperty "bbotiscaf.profile" "test")
+                (System/setProperty "bbotiscaf.test.uuid" (str (java.util.UUID/randomUUID)))
+                (eftest/run-tests
+                  (eftest/find-tests "test")
+                  {:multithread? :vars
+                   :report eftest.report.progress/report}))}}}
 
-;; :aliases
-;;  {:babashka/dev
-;;   {:extra-deps {org.babashka/cli {:mvn/version "0.4.39"}}
-;;    :extra-paths ["test" "test/resources"]
-;;    ;:main-opts ["-m" "kaocha.runner" "--config-file" "tests.edn"]
-;;    }}
-
-;; test-clj {:doc "Runs tests with Kaocha in JVM"
-;;             :task (clojure {:extra-env {"BBOTISCAF_PROFILE" "test"
-;;                                         "BBOTISCAF_TEST_UUID" (java.util.UUID/randomUUID)}}
-;;                            "-M:test")}
