@@ -1,6 +1,5 @@
 (ns bbotiscaf.impl.system.app
-  (:require [bbotiscaf.misc :refer [throw-error]]
-            [integrant.core :as ig]))
+  (:require [bbotiscaf.misc :refer [throw-error]]))
 
 (defonce ^:private app (atom nil))
 
@@ -15,6 +14,8 @@
                  {:incoming-data data}))
   (reset! app data))
 
+(defn clear-app! [] (reset! app nil))
+
 (def bot-token (delay (:bot/token @app)))
 
 (def default-language-code (delay (:bot/default-language-code @app)))
@@ -27,6 +28,3 @@
 
 (def handler-namespaces (delay (:handler/namespaces @app)))
 
-(defn shutdown!
-  []
-  (ig/halt! @app))

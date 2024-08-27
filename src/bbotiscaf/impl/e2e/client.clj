@@ -3,6 +3,7 @@
     [bbotiscaf.core :as bbot]
     [bbotiscaf.impl.e2e.dummy :as dum]
     [bbotiscaf.misc :refer [throw-error]]
+    [bbotiscaf.spec.commons :refer [Regexp]]
     [bbotiscaf.spec.telegram :as spec.tg]
     [malli.core :as m]))
 
@@ -26,7 +27,7 @@
   (if (keyword? dummy) (-> dummy dum/get-by-key :dummy) dummy))
 
 
-(m/=> dummy->base-message [:-> [:or spec.tg/User :keyword] spec.tg/Base-Message])
+(m/=> dummy->base-message [:-> [:or spec.tg/User :keyword] spec.tg/BaseMessage])
 
 
 (defn- dummy->base-message
@@ -41,7 +42,7 @@
 
 
 (m/=> send-text [:=>
-                 [:cat [:or spec.tg/User :keyword] :string [:vector spec.tg/Message-Entity]]
+                 [:cat [:or spec.tg/User :keyword] :string [:vector spec.tg/MessageEntity]]
                  :any])
 
 
@@ -53,7 +54,7 @@
     (send-update {:message message})))
 
 
-(m/=> dummy->base-callback-query [:-> [:or spec.tg/User :keyword] spec.tg/Base-Callback-Query])
+(m/=> dummy->base-callback-query [:-> [:or spec.tg/User :keyword] spec.tg/BaseCallbackQuery])
 
 
 (defn- dummy->base-callback-query
@@ -67,7 +68,7 @@
                  [:cat
                   [:or spec.tg/User :keyword]
                   spec.tg/Message
-                  [:fn (fn [re] (instance? java.util.regex.Pattern re))]]
+                  Regexp]
                  :any])
 
 

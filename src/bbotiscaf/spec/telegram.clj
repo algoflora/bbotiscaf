@@ -24,7 +24,7 @@
    [:last_name {:optional true} :string]
    [:is_forum {:optional true} [:= true]]])
 
-(def Message-Entity
+(def MessageEntity
   [:map
    {:closed true}
    [:type [:enum
@@ -43,7 +43,7 @@
   [:map
    {:closed true}
    [:text :string]
-   [:entities [:vector Message-Entity]]])
+   [:entities [:vector MessageEntity]]])
 
 (def Button
   [:map
@@ -60,7 +60,7 @@
                                                        [:vector
                                                         Button]]]]]])
 
-(def Base-Message
+(def BaseMessage
   (m/schema
    [:merge
     [:map
@@ -71,26 +71,26 @@
     Reply-Markup]
    {:registry registry}))
 
-(def Text-Message
+(def TextMessage
   (m/schema
    [:merge
-    Base-Message
+    BaseMessage
     Text]
    {:registry registry}))
 
 (def Message
   [:or
-   Text-Message])
+   TextMessage])
 
-(def Base-Callback-Query
+(def BaseCallbackQuery
   [:map
    [:id :string]
    [:from User]])
 
-(def Callback-Query
+(def CallbackQuery
   (m/schema
    [:merge
-    Base-Callback-Query
+    BaseCallbackQuery
     [:map
      [:message {:optional true} [:or
                                  Message
@@ -101,18 +101,18 @@
      [:data {:optional true} [:string {:min 1 :max 64}]]]]
    {:registry registry}))
 
-(def Message-Update-Data
+(def MessageUpdateData
   [:map
    [:message Message]])
 
-(def Callback-Query-Update-Data
+(def CallbackQueryUpdateData
   [:map
-   [:callback_query Callback-Query]])
+   [:callback_query CallbackQuery]])
 
 (def Update-Data
   [:or
-   Message-Update-Data
-   Callback-Query-Update-Data])
+   MessageUpdateData
+   CallbackQueryUpdateData])
 
 (def Base-Update
   [:map
@@ -122,52 +122,52 @@
   (m/schema
    [:merge
     Base-Update
-    Message-Update-Data]
+    MessageUpdateData]
    {:registry registry}))
 
-(def Callback-Query-Update
+(def CallbackQueryUpdate
   (m/schema
    [:merge
     Base-Update
-    Callback-Query-Update-Data]
+    CallbackQueryUpdateData]
    {:registry registry}))
 
 (def Update
   [:or
    Message-Update
-   Callback-Query-Update])
+   CallbackQueryUpdate])
 
-(def Base-Request
+(def BaseRequest
   [:map
    [:chat_id :int]])
 
-(def Send-Message-Request
+(def SendMessageRequest
   (m/schema
    [:merge
-    Base-Request
+    BaseRequest
     [:map
      [:text :string]
-     [:entities [:vector Message-Entity]]]
+     [:entities [:vector MessageEntity]]]
     Reply-Markup]
    {:registry registry}))
 
-(def Edit-Message-Text-Request
+(def EditMessageTextRequest
   (m/schema
    [:merge
-    Send-Message-Request
+    SendMessageRequest
     [:map
      [:message_id :int]]]
    {:registry registry}))
 
-(def Delete-Message-Request
+(def DeleteMessageRequest
   (m/schema
    [:merge
-    Base-Request
+    BaseRequest
     [:map
      [:message_id :int]]]
    {:registry registry}))
 
 (def Request
   [:or
-   Send-Message-Request
-   Delete-Message-Request])
+   SendMessageRequest
+   DeleteMessageRequest])
