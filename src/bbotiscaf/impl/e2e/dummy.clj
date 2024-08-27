@@ -25,12 +25,33 @@
     :language_code (name lang)}))
 
 
-(m/=> new [:-> :keyword [:map-of :keyword spec.e2e/Dummy-Entry]])
+(m/=> new [:-> :keyword spec.e2e/Dummy-Entry])
 
 
 (defn new
   [key]
-  (swap! dummies assoc key {:dummy (create key) :messages []}))
+  (key (swap! dummies assoc key {:dummy (create key) :messages []})))
+
+
+(defn clear-all
+  []
+  (reset! dummies {}))
+
+
+(m/=> dump-all [:=> [:cat] [:map-of :keyword spec.e2e/Dummy-Entry]])
+
+
+(defn dump-all
+  []
+  @dummies)
+
+
+(m/=> restore [:-> [:maybe [:map-of :keyword spec.e2e/Dummy-Entry]] :any])
+
+
+(defn restore
+  [data]
+  (reset! dummies (or data {})))
 
 
 (defn dbg
@@ -46,6 +67,14 @@
   (->> (vals @dummies)
        (filter #(= (get-in % [:dummy :id]) chat-id))
        first))
+
+
+(m/=> exists? [:-> :keyword :boolean])
+
+
+(defn exists?
+  [key]
+  (contains? @dummies key))
 
 
 (m/=> get-by-key [:-> :keyword spec.e2e/Dummy-Entry])
@@ -80,7 +109,7 @@
   (-> dummy :username keyword ((deref dummies)) :messages first))
 
 
-(m/=> add-message [:=> [:cat [:or spec.tg/Send-Message-Request spec.tg/Message]] spec.tg/Message])
+(m/=> add-message [:=> [:cat [:or spec.tg/SendMessageRequest spec.tg/Message]] spec.tg/Message])
 
 
 (defn add-message
@@ -120,7 +149,7 @@
       :else (first idxs))))
 
 
-(m/=> update-message-text [:-> spec.tg/Edit-Message-Text-Request spec.tg/Message])
+(m/=> update-message-text [:-> spec.tg/EditMessageTextRequest spec.tg/Message])
 
 
 (defn update-message-text

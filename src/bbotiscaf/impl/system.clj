@@ -1,33 +1,18 @@
 (ns bbotiscaf.impl.system
-  (:require [integrant.core :as ig]
-            [bbotiscaf.impl.config :as conf]
-            ;; [bbotiscaf.impl.api]
-            [bbotiscaf.impl.e2e]
-            [bbotiscaf.impl.system.app :as app]
-            [bbotiscaf.misc :refer [read-resource-dir throw-error]]
-            [malli.instrument :as mi]
-            [malli.core :as m]
-            [clojure.java.io :as io]
-            [clojure.edn :as edn]
-            [taoensso.timbre :as log]
-            [pod.huahaiy.datalevin :as d]))
+  (:require
+    ;; [bbotiscaf.impl.api]
+    [bbotiscaf.impl.config :as conf]
+    [bbotiscaf.impl.e2e]
+    [bbotiscaf.impl.system.app :as app]
+    [bbotiscaf.misc :refer [read-resource-dir throw-error]]
+    [clojure.edn :as edn]
+    [clojure.java.io :as io]
+    [integrant.core :as ig]
+    [malli.core :as m]
+    [malli.instrument :as mi]
+    [pod.huahaiy.datalevin :as d]
+    [taoensso.timbre :as log]))
 
-
-(defn- malli-instrument-error-handler [error data]
-  (let [func (:fn-name data)
-        expl (m/explain (:schema data) (:value data))]
-    (throw-error ::malli-instrument-error
-                 (format "Malli instrument error in function '%s'!" func)
-                 {:funtion func :explanation expl :error error :data data})))
-
-(defn startup!
-  []
-  (when-not (app/app-set?)
-    (mi/instrument! {:report malli-instrument-error-handler})
-    (let [config (conf/get-config)]
-      (app/set-app! (ig/init config))
-      (log/info ::startup-completed
-                "Startup completed: %s" (app/get-app)))))
 
 (defn- get-bbotiscaf-schema
   []
@@ -36,12 +21,14 @@
       slurp
       edn/read-string))
 
+
 (defmethod ig/init-key :api/fn
   [_ symbol]
   (log/info ::apply-api-fn
             "Applying :api/fn %s..." symbol
             {:symbol symbol})
   (find-var symbol))
+
 
 (defmethod ig/init-key :db/conn
   [_ conn-str]
@@ -56,12 +43,19 @@
                :opts opts})
     (d/get-conn conn-str schema #_opts)))
 
+
+(defmethod ig/halt-key! :db/conn
+  [_ conn]
+  (d/close conn))
+
+
 (defmethod ig/init-key :bot/token
   [_ token]
   (log/info ::apply-bot-token
             "Applying :bot/token %s..." token
             {:token token})
   token)
+
 
 (defmethod ig/init-key :bot/default-language-code
   [_ code]
@@ -70,6 +64,7 @@
             {:code code})
   code)
 
+
 (defmethod ig/init-key :handler/namespaces
   [_ namespaces]
   (log/info ::apply-handler-namespaces
@@ -77,9 +72,37 @@
             {:namespaces namespaces})
   namespaces)
 
+
 (defmethod ig/init-key :handler/main
   [_ handler]
   (log/info ::apply-handler-main
             "Applying :handler/main %s..." handler
             {:handler handler})
   handler)
+
+
+(defn- malli-instrument-error-handler
+  [error data]
+  (let [func (:fn-name data)
+        expl (m/explain (:schema data) (:value data))]
+    (throw-error ::malli-instrument-error
+                 (format "Malli instrument error in function '%s'!" func)
+                 {:funtion func :explanation expl :error error :data data})))
+
+
+(defn startup!
+  []
+  (when-not (app/app-set?)
+    (mi/instrument! {:report malli-instrument-error-handler})
+    (let [config (conf/get-config)]
+      (app/set-app! (ig/init config))
+      (log/info ::startup-completed
+                "Startup completed: %s" (app/get-app)))))
+
+
+(defn shutdown!
+  []
+  (ig/halt! (app/get-app))
+  (app/clear-app!)
+  (log/info ::sutdown-completed
+            "Shutdown completed"))

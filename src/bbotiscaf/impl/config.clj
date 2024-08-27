@@ -32,7 +32,7 @@
         project-config   (get-project-config)
         config (merge bbotiscaf-config project-config)]
     (log/info ::config-loaded
-              "Configuration loaded"
+              "Configuration loaded %s" config
                 {:profile profile
                  :bbotiscaf-config bbotiscaf-config
                  :project-config project-config
