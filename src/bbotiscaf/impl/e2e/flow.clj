@@ -9,7 +9,8 @@
      [bbotiscaf.spec.blueprint :as spec.bp]
      [bbotiscaf.spec.commons :refer [Regexp]]
      [bbotiscaf.spec.telegram :as spec.tg]
-     [clojure.test :refer [is testing deftest]]
+     [clojure.test :refer [is testing]]
+     [clojure.walk :refer [postwalk]]
      [malli.core :as m]
      [pod.huahaiy.datalevin :as d]))
 
@@ -26,7 +27,7 @@
 
 (defn- str?->re
   [re?]
-  (if (string? re?) (re-pattern (format "^%s$" re?)) re?)) ;TODO: Escape regex!
+  (if (string? re?) (re-pattern (java.util.regex.Pattern/quote re?)) re?))
 
 
 (m/=> get-message [:=> [:cat spec.tg/User [:maybe [:int {:min 1}]]] spec.tg/Message])
@@ -136,27 +137,38 @@
       (apply-blueprint (drop (+ 1 (count args)) blueprint)))))
 
 
-(defn -flow
-  [{:keys [db-data dummies]} blueprint]
-  (System/setProperty "bbotiscaf.test.uuid" (str (java.util.UUID/randomUUID)))
-  (sys/startup!)
-  (dum/restore dummies)
-  (let [final-db-data
-        (binding [*dtlv* @app/db-conn]
-          (d/transact! *dtlv* db-data)
-          (apply-blueprint blueprint)
-          (d/q '[:find [(pull ?e [*]) ...]
-                 :where [?e]]
-               (dtlv)))
-        final-dummies (dum/dump-all)]
-    (dum/clear-all)
-    (sys/shutdown!)
-    (System/clearProperty "bbotiscaf.test.uuid")
-    {:db-data final-db-data
-     :dummies final-dummies}))
+(defonce flows-data (atom {}))
 
 
-(defmacro flow
-  [name-expr data blueprint]
-  `(deftest ~(symbol (eval name-expr))
-     (-flow ~data ~blueprint)))
+(defn- negate-db-ids
+  [data]
+  (println "NEGATE" data)
+  (let [res (postwalk #(if (and (map? %) (contains? % :db/id)) (assoc % :db/id (- (:db/id %))) %)
+                      data)]
+    (println "NEGATED" res)
+    res))
+
+
+(defn flow
+  [name data-from-flow blueprint]
+  (let [{:keys [db-data dummies]} (if (some? data-from-flow) (data-from-flow @flows-data) {})]
+    (testing name
+      (System/setProperty "bbotiscaf.test.uuid" (str (java.util.UUID/randomUUID)))
+      (sys/startup!)
+      (dum/restore dummies)
+      (let [final-db-data
+            (binding [*dtlv* @app/db-conn]
+              (clojure.pprint/pprint ["DB_DATA" name db-data *dtlv* (d/transact! *dtlv* db-data) (d/q '[:find [(pull ?e [*]) ...]
+                     :where [?e]]
+                   (dtlv))])
+              (apply-blueprint blueprint)
+              (d/q '[:find [(pull ?e [*]) ...]
+                     :where [?e]]
+                   (dtlv)))
+            final-dummies (dum/dump-all)]
+        (dum/clear-all)
+        (sys/shutdown!)
+        (System/clearProperty "bbotiscaf.test.uuid")
+        (swap! flows-data assoc (keyword name) {:db-data (negate-db-ids final-db-data)
+                                                :dummies final-dummies})))))
+

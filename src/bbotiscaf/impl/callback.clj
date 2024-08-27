@@ -1,11 +1,13 @@
 (ns bbotiscaf.impl.callback
-  (:require [taoensso.timbre :as log]
-            [malli.core :as m]
-            [bbotiscaf.misc :refer [throw-error]]
-            [bbotiscaf.spec.model :as spec.mdl]
-            [bbotiscaf.dynamic :refer [*dtlv* dtlv *user*]]
-            [bbotiscaf.impl.system.app :as app]
-            [pod.huahaiy.datalevin :as d]))
+  (:require
+    [bbotiscaf.dynamic :refer [*dtlv* dtlv *user*]]
+    [bbotiscaf.impl.system.app :as app]
+    [bbotiscaf.misc :refer [throw-error]]
+    [bbotiscaf.spec.model :as spec.mdl]
+    [malli.core :as m]
+    [pod.huahaiy.datalevin :as d]
+    [taoensso.timbre :as log]))
+
 
 (def require-namespaces
   (delay
@@ -14,12 +16,14 @@
                 "Requering namespaces: %s" namespaces
                 {:namespaces namespaces})
       (time (doseq [ns namespaces]
-            (require ns))))))
+              (require ns))))))
+
 
 (defn callbacks-count
   []
   (first (d/q '[:find  [(count ?cb)]
                 :where [?cb :callback/uuid]] (dtlv))))
+
 
 (m/=> set-callback
       [:function
@@ -32,6 +36,7 @@
              [:boolean {:optional true}]
              [:uuid {:optional true}]]
         :uuid]])
+
 
 (defn set-callback
   ([user f args]
@@ -55,7 +60,10 @@
                                               (dtlv) uuid))})
      uuid)))
 
+
 (m/=> delete [:=> [:cat spec.mdl/User :int] :nil])
+
+
 (defn delete
   [user mid]
   (let [db-ids-to-retract (d/q '[:find ?cb
@@ -73,7 +81,10 @@
                :to-retract      db-ids-to-retract
                :callbacks-count (callbacks-count)})))
 
+
 (m/=> set-new-message-ids [:=> [:cat spec.mdl/User [:or :int :nil] [:vector :uuid]] :nil])
+
+
 (defn set-new-message-ids
   [user mid uuids]
   (let [uuids-to-retract (apply disj
@@ -87,8 +98,8 @@
                                                       ;; TODO: Fix Datalevin with not and collections
                                                       (dtlv) (:user/id user) mid)))
                                 (set uuids))]
-    (d/transact! (dtlv) (mapv #(vector :db/retractEntity [:callback/uuid %]) uuids-to-retract))
-    (d/transact! (dtlv) (mapv #(into {} [[:callback/uuid %] [:callback/message-id mid]]) uuids))
+    (d/transact! *dtlv* (mapv #(vector :db/retractEntity [:callback/uuid %]) uuids-to-retract))
+    (d/transact! *dtlv* (mapv #(into {} [[:callback/uuid %] [:callback/message-id mid]]) uuids))
     (log/info ::set-new-message-ids
               "New message ids set to %d Callbacks" (count uuids)
               {:user user
@@ -97,7 +108,10 @@
                :retracted-callbacks-uuids uuids-to-retract
                :final-callbacks-count (callbacks-count)})))
 
+
 (m/=> load-callback [:-> :uuid spec.mdl/Callback])
+
+
 (defn- load-callback
   [uuid]
   (let [callback (d/pull (dtlv) '[* {:callback/user [*]}] [:callback/uuid uuid])]
@@ -110,7 +124,10 @@
                    {:user *user* :callback callback}))
     callback))
 
+
 (m/=> check-handler! [:-> spec.mdl/User :nil])
+
+
 (defn check-handler!
   [user]
   (let [user-callback (-> user :user/uuid load-callback)
@@ -119,9 +136,12 @@
                   (not-empty (:callback/arguments user-callback)))
       (set-callback user main-handler nil false (:user/uuid user)))))
 
+
 (m/=> call [:function
             [:=> [:cat :uuid] :nil]
             [:=> [:cat :uuid :map] :nil]])
+
+
 (defn call
   ([uuid] (call uuid {}))
   ([uuid args]

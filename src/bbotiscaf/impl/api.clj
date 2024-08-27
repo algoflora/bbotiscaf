@@ -66,7 +66,8 @@
     (:message_id msg)
     (->> msg
          :reply_markup :inline_keyboard flatten
-         (mapv #(some-> % :callback_data java.util.UUID/fromString)) (filterv some?))))
+         (map #(some-> % :callback_data java.util.UUID/fromString))
+         (filterv some?))))
 
 
 (defn- to-edit?
@@ -192,6 +193,7 @@
         new-msg-id (:message_id new-msg)]
     (when (and (not (:temp optm)) (not= new-msg-id (:msg-id user)))
       (u/set-msg-id user new-msg-id))
+    (println "SEND_TO_CHAT" new-msg)
     (set-callbacks-message-id user new-msg)))
 
 
