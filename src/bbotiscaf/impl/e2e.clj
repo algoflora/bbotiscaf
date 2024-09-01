@@ -13,10 +13,10 @@
 
 (defn request
   [method body]
-  (log/info ::request-received
-            "Received %s request" method
-            {:method method
-             :body body})
+  (log/debug ::request-received
+             "Received %s request" method
+             {:method method
+              :body body})
   (serve method body))
 
 

@@ -21,9 +21,9 @@
 
 (defn handle-update
   [update]
-  (log/info ::handle-update "Handling Update:\t%s " update {:update update})
+  (log/debug ::handle-update "Handling Update:\t%s " update {:update update})
   (let [type (some types (keys update))]
-    (d/with-transaction [conn @app/db-conn]
+    (d/with-transaction [conn (app/db-conn)]
                         (binding [*dtlv* conn]
                           (binding [*user* (u/load-or-create (get-in update [type :from]))
                                     *upd*  update]
@@ -41,7 +41,7 @@
 
 (defn- handle-message
   [msg]
-  (log/info ::handle-message "Handling Message:\t%s " msg {:message msg})
+  (log/debug ::handle-message "Handling Message:\t%s " msg {:message msg})
   (if (and (= "/start" (:text msg))
            (some? (:user/msg-id *user*)) (not= 0 (:user/msg-id *user*)))
     (reset)

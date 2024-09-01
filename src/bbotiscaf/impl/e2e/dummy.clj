@@ -118,7 +118,7 @@
     (swap! dummies (fn [dms]
                      (update-in dms [(-> dummy :username keyword) :messages]
                                 conj (merge {:message_id (-> messages
-                                                             first
+                                                             last
                                                              :message_id
                                                              (or 0)
                                                              inc)
@@ -160,14 +160,14 @@
         dummies# (swap! dummies
                         (fn [dms]
                           (update-in
-                           dms [key :messages]
-                           (fn [msgs]
-                             (update msgs
-                                     msg-idx
-                                     #(merge % (remove-nils
-                                                {:text (:text req)
-                                                 :entities (:entities req)
-                                                 :reply_markup (:reply_markup req)})))))))]
+                            dms [key :messages]
+                            (fn [msgs]
+                              (update msgs
+                                      msg-idx
+                                      #(merge % (remove-nils
+                                                  {:text (:text req)
+                                                   :entities (:entities req)
+                                                   :reply_markup (:reply_markup req)})))))))]
     (get-in dummies# [key :messages msg-idx])))
 
 

@@ -1,9 +1,12 @@
 (ns bbotiscaf.logging
   (:require
+    [babashka.fs :as fs]
+    [bbotiscaf.impl.config :as conf]
+    [cheshire.core :refer [generate-string]]
     [clojure.stacktrace :as st]
     [clojure.string :as str]
-    [taoensso.timbre :as timbre]
-    [taoensso.timbre.appenders.core :as appenders]))
+    [clojure.walk :refer [postwalk]]
+    [taoensso.timbre :as timbre]))
 
 
 (defonce ^:private lambda-context (atom nil))
@@ -41,8 +44,7 @@
       :else (throw (ex-info "Bad log arguments!" {:log-arguments vargs})))))
 
 
-(defn lambda-stdout-appender
-  []
+(def lambda-stdout-appender
   {:enabled?   true
    :async?     false
    :min-level  :info
@@ -65,7 +67,43 @@
                                       "")))))})
 
 
-(timbre/merge-config! {:appenders {:println (lambda-stdout-appender)}})
+(def lambda-edn-appender
+  {:enabled? (= conf/profile :test)
+   :fn (fn [event]
+         (let [data (merge event (process-vargs (:vargs event)))]
+           (spit "logs.edn" (prn-str data) :append true)))})
+
+
+(defn- check-json
+  [data]
+  (postwalk #(try (generate-string %)
+                  %
+                  (catch java.lang.Exception _
+                    (str/trimr (prn-str %))))
+            data))
+
+
+(def lambda-json-appender
+  {:enabled? (= conf/profile :test)
+   :fn (fn [event]
+         (let [data (check-json (select-keys (merge event (process-vargs (:vargs event)))
+                                             [:instant :message-text :event-name :vargs
+                                              :?err :?file :?line]))]
+           (spit "logs.json" (str (generate-string data) "\n") :append true)))})
+
+
+(fs/delete-if-exists "logs.json")
+
+
+(fs/delete-if-exists "logs.edn")
+
+
+(timbre/merge-config! {:appenders (merge {:println lambda-stdout-appender
+                                          ;; :edn lambda-edn-appender
+                                          :json lambda-json-appender})})
+
+
+;; (timbre/set-min-level! :debug)
 
 
 (defn inject-lambda-context!
