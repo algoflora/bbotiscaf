@@ -1,20 +1,39 @@
 (ns bbotiscaf.e2e-test
   (:require
-   [bbotiscaf.impl.e2e.flow :refer [flow]]
-   [clojure.test :refer [deftest]]))
+    [bbotiscaf.impl.e2e.flow :refer [flow]]
+    [clojure.test :refer [deftest]]))
 
 
 (deftest e2e
 
-  (flow "test-1" {} [:user/send-text "Sasha"
-                     :user/check-msg "Hi, Sasha!" '() [[#"^Go"]]
-                     :user/click-btn "Go!"
-                     :user/check-msg "Go, Sasha!" [["Home"]]
-                     :user/click-btn #"Home"
-                     :user/check-msg "Hi, stranger!"])
+  (flow "Main Message" nil
+        [:ivan/send-text "Ivan"
+         :ivan/check-msg "Hi, Ivan!" '() [[#"Go"] ["Temp"]]
+         :mary/send-text "Mary"
+         :mary/check-msg "Hi, Mary!" [["Go!"] ["Temp"]]
+         :ivan/click-btn #"^Go"
+         :mary/click-btn "Go"
+         :mary/check-msg "Go, Mary!" '() [["Home"]]
+         :ivan/check-msg "Go, Ivan!" [["Home"]]
+         :ivan/click-btn "Home"
+         :mary/click-btn "Home"
+         :ivan/check-msg "Hi, stranger!" [["Go"] ["Temp"]]
+         :mary/check-msg #"stranger" '() [["Go"] ["Temp"]]])
 
 
-  (flow "test-2" :test-1 [:user/check-msg "Hi, stranger!"
-                          :user/click-btn "Go!"])
+  (flow "Temp Message" :main-message
+        [:ivan/check-msg "Hi, stranger!" [["Go"] ["Temp"]]
+         :mary/check-msg "Hi, stranger!" [["Go"] ["Temp"]]
+         :mary/click-btn "Temp"
+         :ivan/click-btn "Temp"
+         :mary/click-btn "Temp"
+         :mary/check-msg 1 "Temp message of Mary" [["✖️"]]
+         :ivan/check-msg 1 "Temp message of Ivan" [["✖️"]]
+         :mary/check-msg 2 "Temp message of Mary" [["✖️"]]
+         :ivan/click-btn 1 "✖️"
+         :mary/click-btn 2 "✖️"
+         :mary/click-btn 1 "✖️"
+         :ivan/check-msg 1 "Hi, stranger!"
+         :mary/check-msg 1 "Hi, stranger!"])
 
-  (flow "test-2" :test-2 [:user/check-msg "Hi, !"]))
+  #_(flow "test-3" :test-2 [:user/check-msg "Go, stranger!"]))

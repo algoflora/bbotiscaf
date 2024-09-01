@@ -103,6 +103,9 @@
                                           :json lambda-json-appender})})
 
 
+;; (timbre/set-min-level! :debug)
+
+
 (defn inject-lambda-context!
   []
   (timbre/merge-config!

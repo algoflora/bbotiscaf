@@ -1,10 +1,14 @@
 (ns bbotiscaf.impl.button
-  (:require [bbotiscaf.button :as b]
-            [bbotiscaf.impl.callback :as clb]
-            [bbotiscaf.impl.system.app :as app]
-            [bbotiscaf.texts :refer [txt txti]]))
+  (:require
+    [bbotiscaf.button :as b]
+    [bbotiscaf.impl.callback :as clb]
+    [bbotiscaf.impl.system.app :as app]
+    [bbotiscaf.texts :refer [txt txti]]))
 
-(defrecord XButton [user])
+
+(defrecord XButton
+  [])
+
 
 (extend-protocol b/KeyboardButton
   b/TextButton
@@ -46,4 +50,3 @@
     {:text "✖️"
      :callback_data
      (str (clb/set-callback user 'bbotiscaf.handler/delete-this-message {} true))}))
-

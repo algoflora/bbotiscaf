@@ -24,60 +24,63 @@
 
 (defmethod ig/init-key :api/fn
   [_ symbol]
-  (log/info ::apply-api-fn
-            "Applying :api/fn %s..." symbol
-            {:symbol symbol})
+  (log/debug ::init-api-fn
+             "Applying :api/fn %s..." symbol
+             {:symbol symbol})
   (find-var symbol))
 
 
 (defmethod ig/init-key :db/conn
   [_ conn-str]
   (let [schema (merge (get-bbotiscaf-schema) (read-resource-dir "schema"))
-        opts {:validate-data? true
-              :closed-schema? true
-              :auto-entity-time? true}]
-    (log/info ::apply-db-conn
-              "Applying :db/conn %s..." conn-str
-              {:conn-str conn-str
-               :schema schema
-               :opts opts})
-    (d/get-conn conn-str schema #_opts)))
+        opts   {:validate-data? true
+                :closed-schema? true
+                :auto-entity-time? true}
+        cn-str (or conn-str (format "/tmp/bbotiscaf-test/%s" (str (java.util.UUID/randomUUID))) #_(str (fs/create-temp-dir {:prefix "bbotiscaf-test"})))]
+    (log/debug ::init-db-conn
+               "Applying :db/conn %s..." cn-str
+               {:conn-str cn-str
+                :schema schema
+                :opts opts})
+    (d/get-conn cn-str schema #_opts)))
 
 
 (defmethod ig/halt-key! :db/conn
   [_ conn]
+  (log/debug ::halt-db-conn
+             "Halting :db/conn...")
   (d/close conn))
 
 
 (defmethod ig/init-key :bot/token
   [_ token]
-  (log/info ::apply-bot-token
-            "Applying :bot/token %s..." token
-            {:token token})
+  (log/debug ::init-bot-token
+             "Applying :bot/token %s..." token
+             {:token token})
   token)
 
 
 (defmethod ig/init-key :bot/default-language-code
   [_ code]
-  (log/info ::apply-bot-default-language-code
-            "Applying :bot/default-language-code %s..." code
-            {:code code})
+  (log/debug ::init-bot-default-language-code
+             "Applying :bot/default-language-code %s..." code
+             {:code code})
   code)
 
 
 (defmethod ig/init-key :handler/namespaces
   [_ namespaces]
-  (log/info ::apply-handler-namespaces
-            "Applying :handler/namespaces %s..." namespaces
-            {:namespaces namespaces})
+  (log/debug ::init-handler-namespaces
+             "Applying :handler/namespaces %s..." namespaces
+             {:namespaces namespaces})
   namespaces)
 
 
 (defmethod ig/init-key :handler/main
   [_ handler]
-  (log/info ::apply-handler-main
-            "Applying :handler/main %s..." handler
-            {:handler handler})
+  (log/debug ::init-handler-main
+             "Applying :handler/main %s..." handler
+             {:handler handler})
   handler)
 
 
@@ -105,4 +108,4 @@
   (ig/halt! (app/get-app))
   (app/clear-app!)
   (log/info ::sutdown-completed
-            "Shutdown completed"))
+            "Shutdown completed: %s" (app/get-app)))

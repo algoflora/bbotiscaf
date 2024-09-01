@@ -9,17 +9,12 @@
      [bbotiscaf.spec.blueprint :as spec.bp]
      [bbotiscaf.spec.commons :refer [Regexp]]
      [bbotiscaf.spec.telegram :as spec.tg]
+     [clojure.string :as str]
      [clojure.test :refer [is testing]]
      [clojure.walk :refer [postwalk]]
      [malli.core :as m]
-     [pod.huahaiy.datalevin :as d]))
-
-
-(defn- create-data-query
-  [attrs]
-  `[:find [(~'pull ~'?e [~'*]) ...]
-    :where
-    (~'or ~@(map (fn [a] `[~'?e ~a]) attrs))])
+     [pod.huahaiy.datalevin :as d]
+     [taoensso.timbre :as log]))
 
 
 (m/=> str?->re [:-> [:or :string Regexp] Regexp])
@@ -30,15 +25,24 @@
   (if (string? re?) (re-pattern (java.util.regex.Pattern/quote re?)) re?))
 
 
+(defn- dump
+  [dummy]
+  (let [key   (-> dummy :username keyword)
+        dummy (dum/get-by-key key)]
+    (log/info ::dumping-dummy
+              "Dumping dummy %s\n%s" key (with-out-str (clojure.pprint/pprint dummy))
+              {:dummy dummy})))
+
+
 (m/=> get-message [:=> [:cat spec.tg/User [:maybe [:int {:min 1}]]] spec.tg/Message])
 
 
 (defn- get-message
-  [dummy num?]
-  (if (pos-int? num)
-    (as-> num? $
+  [dummy ?num]
+  (if (pos-int? ?num)
+    (as-> ?num $
           (dum/get-last-messages dummy $ false)
-          (reverse $) (vec $) (get $ (dec num?)))
+          (reverse $) (vec $) (get $ (dec ?num)))
     (dum/get-first-message dummy)))
 
 
@@ -85,11 +89,15 @@
 (defmethod -check-message clojure.lang.PersistentVector
   [msg exp]
   (testing "buttons"
-    (doseq [[row-idx row] (map-indexed vector exp)]
-      (doseq [[col-idx data] (map-indexed vector row)]
-        (let [re  (str?->re data)
-              btn (get-in (-> msg :reply_markup :inline_keyboard) [row-idx col-idx])]
-          (is (some? (re-find re (:text btn)))))))))
+    (let [kbd (-> msg :reply_markup :inline_keyboard)]
+      (is (= (count exp) (count kbd)) "Different rows count!")
+      (doseq [[row-idx row] (map-indexed vector exp)]
+        (is (= (count (get exp row-idx)) (count row))
+            (format "Different columns count in row %d" row-idx))
+        (doseq [[col-idx data] (map-indexed vector row)]
+          (let [re  (str?->re data)
+                btn (get-in kbd [row-idx col-idx])]
+            (is (some? (re-find re (:text btn))))))))))
 
 
 (defn- -check-message-entities
@@ -142,33 +150,29 @@
 
 (defn- negate-db-ids
   [data]
-  (println "NEGATE" data)
-  (let [res (postwalk #(if (and (map? %) (contains? % :db/id)) (assoc % :db/id (- (:db/id %))) %)
+  (let [res (postwalk #(if (and (map? %) (contains? % :db/id))
+                         (if (= 1 (count %))
+                           (- (:db/id %))
+                           (assoc % :db/id (- (:db/id %)))) %)
                       data)]
-    (println "NEGATED" res)
     res))
 
 
 (defn flow
   [name data-from-flow blueprint]
-  (let [{:keys [db-data dummies]} (if (some? data-from-flow) (data-from-flow @flows-data) {})]
+  (let [{:keys [datoms dummies]} (if (some? data-from-flow) (data-from-flow @flows-data) {})
+        to-transact (mapv #(-> % seq (conj :db/add) vec) datoms)]
     (testing name
-      (System/setProperty "bbotiscaf.test.uuid" (str (java.util.UUID/randomUUID)))
       (sys/startup!)
       (dum/restore dummies)
-      (let [final-db-data
-            (binding [*dtlv* @app/db-conn]
-              (clojure.pprint/pprint ["DB_DATA" name db-data *dtlv* (d/transact! *dtlv* db-data) (d/q '[:find [(pull ?e [*]) ...]
-                     :where [?e]]
-                   (dtlv))])
+      (let [final-datoms
+            (binding [*dtlv* (app/db-conn)]
+              (d/transact! *dtlv* to-transact)
               (apply-blueprint blueprint)
-              (d/q '[:find [(pull ?e [*]) ...]
-                     :where [?e]]
-                   (dtlv)))
+              (d/datoms (dtlv) :eav))
             final-dummies (dum/dump-all)]
         (dum/clear-all)
         (sys/shutdown!)
-        (System/clearProperty "bbotiscaf.test.uuid")
-        (swap! flows-data assoc (keyword name) {:db-data (negate-db-ids final-db-data)
-                                                :dummies final-dummies})))))
-
+        (swap! flows-data assoc (-> name (str/replace #" " "-") str/lower-case keyword)
+               {:datoms (negate-db-ids final-datoms)
+                :dummies final-dummies})))))

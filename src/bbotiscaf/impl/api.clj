@@ -20,11 +20,11 @@
 (defn api-wrap
   [method data]
   (let [api-fn @app/api-fn]
-    (log/info ::calling-api-fn
-              "Calling API request function %s..." api-fn
-              {:api/fn api-fn
-               :method method
-               :data data})
+    (log/debug ::calling-api-fn
+               "Calling API request function %s..." api-fn
+               {:api/fn api-fn
+                :method method
+                :data data})
     (api-fn method data)))
 
 
@@ -44,11 +44,15 @@
 
 (m/=> prepare-keyboard [:=>
                         [:cat
-                         [:vector [:vector [:fn (fn [btn] (instance? b/KeyboardButton btn))]]]
+                         [:maybe [:vector
+                                  [:vector
+                                   [:fn (fn [btn] (instance? b/KeyboardButton btn))]]]]
                          spec.mdl/User
                          [:or :map :nil]]
                         [:map
-                         [:inline_keyboard [:vector [:vector spec.tg/Button]]]]])
+                         [:inline_keyboard [:vector
+                                            [:vector
+                                             spec.tg/Button]]]]])
 
 
 (defn prepare-keyboard
@@ -56,7 +60,7 @@
   (when kbd
     {:inline_keyboard
      (cond-> (mapv (fn [btns] (mapv #(b/to-map % user) btns)) kbd)
-       (:temp optm) (conj [(ib/->XButton user)]))}))
+       (:temp optm) (conj [(b/to-map (ib/->XButton) user)]))}))
 
 
 (defn- set-callbacks-message-id
@@ -193,7 +197,6 @@
         new-msg-id (:message_id new-msg)]
     (when (and (not (:temp optm)) (not= new-msg-id (:msg-id user)))
       (u/set-msg-id user new-msg-id))
-    (println "SEND_TO_CHAT" new-msg)
     (set-callbacks-message-id user new-msg)))
 
 

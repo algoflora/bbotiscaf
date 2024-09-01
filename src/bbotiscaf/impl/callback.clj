@@ -12,10 +12,10 @@
 (def require-namespaces
   (delay
     (let [namespaces @app/handler-namespaces]
-      (log/info ::require-namespaces
-                "Requering namespaces: %s" namespaces
-                {:namespaces namespaces})
-      (time (doseq [ns namespaces]
+      (log/debug ::require-namespaces
+                 "Requering namespaces: %s" namespaces
+                 {:namespaces namespaces})
+      (time (doseq [ns (conj namespaces 'bbotiscaf.handler)]
               (require ns))))))
 
 
@@ -51,13 +51,13 @@
                                    :callback/is-service is-service
                                    :callback/user [:user/uuid (:user/uuid user)]})])
      ;; TODO: possible perfomance leak
-     (log/info ::callback-created
-               "Callback created"
-               {:callbacks-count (callbacks-count)
-                :callback        (ffirst (d/q '[:find (pull ?cb [*])
-                                                :in $ ?uuid
-                                                :where [?cb :callback/uuid ?uuid]]
-                                              (dtlv) uuid))})
+     (log/debug ::callback-created
+                "Callback created"
+                {:callbacks-count (callbacks-count)
+                 :callback        (ffirst (d/q '[:find (pull ?cb [*])
+                                                 :in $ ?uuid
+                                                 :where [?cb :callback/uuid ?uuid]]
+                                               (dtlv) uuid))})
      uuid)))
 
 
@@ -74,12 +74,12 @@
                                (dtlv) (:user/id user) mid)]
     (d/transact! *dtlv* (mapv #(vector :db/retractEntity (first %)) db-ids-to-retract))
     ;; TODO: possible perfomance leak
-    (log/info ::callbacks-retracted
-              "%d Callbacks retracted by 'delete'" (count db-ids-to-retract)
-              {:message-id      mid
-               :retracted-count (count db-ids-to-retract)
-               :to-retract      db-ids-to-retract
-               :callbacks-count (callbacks-count)})))
+    (log/debug ::callbacks-retracted
+               "%d Callbacks retracted by 'delete'" (count db-ids-to-retract)
+               {:message-id      mid
+                :retracted-count (count db-ids-to-retract)
+                :to-retract      db-ids-to-retract
+                :callbacks-count (callbacks-count)})))
 
 
 (m/=> set-new-message-ids [:=> [:cat spec.mdl/User [:or :int :nil] [:vector :uuid]] :nil])
@@ -100,13 +100,13 @@
                                 (set uuids))]
     (d/transact! *dtlv* (mapv #(vector :db/retractEntity [:callback/uuid %]) uuids-to-retract))
     (d/transact! *dtlv* (mapv #(into {} [[:callback/uuid %] [:callback/message-id mid]]) uuids))
-    (log/info ::set-new-message-ids
-              "New message ids set to %d Callbacks" (count uuids)
-              {:user user
-               :message-id mid
-               :callback-uuids uuids
-               :retracted-callbacks-uuids uuids-to-retract
-               :final-callbacks-count (callbacks-count)})))
+    (log/debug ::set-new-message-ids
+               "New message ids set to %d Callbacks" (count uuids)
+               {:user user
+                :message-id mid
+                :callback-uuids uuids
+                :retracted-callbacks-uuids uuids-to-retract
+                :final-callbacks-count (callbacks-count)})))
 
 
 (m/=> load-callback [:-> :uuid spec.mdl/Callback])
@@ -117,7 +117,7 @@
   (let [callback (d/pull (dtlv) '[* {:callback/user [*]}] [:callback/uuid uuid])]
     (when (nil? callback)
       (throw-error ::callback-not-found "Callback not found!" {:uuid uuid}))
-    (log/info ::callback-loaded "Callback loaded" {:callback callback})
+    (log/debug ::callback-loaded "Callback loaded" {:callback callback})
     (when (not= (:user/id *user*) (-> callback :callback/user :user/id))
       (throw-error ::wrong-user-callback-call
                    "Wrong User attempt to load Callback!"
