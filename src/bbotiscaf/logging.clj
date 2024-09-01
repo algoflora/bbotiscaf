@@ -98,12 +98,10 @@
 (fs/delete-if-exists "logs.edn")
 
 
-(timbre/merge-config! {:appenders (merge {:println lambda-stdout-appender
+(timbre/merge-config! {:min-level :debug
+                       :appenders (merge {:println lambda-stdout-appender
                                           ;; :edn lambda-edn-appender
                                           :json lambda-json-appender})})
-
-
-;; (timbre/set-min-level! :debug)
 
 
 (defn inject-lambda-context!

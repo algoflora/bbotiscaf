@@ -108,4 +108,4 @@
   (ig/halt! (app/get-app))
   (app/clear-app!)
   (log/info ::sutdown-completed
-            "Shutdown completed: %s" (app/get-app)))
+            "Shutdown completed!"))

@@ -3,8 +3,7 @@
         integrant/integrant {:mvn/version "0.10.0"}
         aero/aero {:mvn/version "1.1.6"}
         tick/tick {:mvn/version "0.7.5"}
-        eftest/eftest {:mvn/version "0.6.0"}
-        com.taoensso/timbre {:mvn/version "6.6.0-RC1"}}
+        eftest/eftest {:mvn/version "0.6.0"}}
  :pods {huahaiy/datalevin {:version "0.9.10"}}
 
  :tasks
@@ -13,7 +12,6 @@
         :requires ([eftest.runner :as eftest])
         :task (do
                 (System/setProperty "bbotiscaf.profile" "test")
-                #_(System/setProperty "bbotiscaf.test.uuid" (str (java.util.UUID/randomUUID)))
                 (eftest/run-tests
                   (eftest/find-tests "test")
                   {:multithread? false
