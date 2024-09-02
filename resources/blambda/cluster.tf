@@ -61,7 +61,7 @@ resource "aws_vpc" "cluster" {
 
 # Public Subnets
 resource "aws_subnet" "public" {
-  count = terraform.workspace == var.cluster_workspace ? 2 : 0
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
   vpc_id                  = aws_vpc.cluster[0].id
   cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index)
@@ -75,7 +75,7 @@ resource "aws_subnet" "public" {
 
 # Private Subnets
 resource "aws_subnet" "private" {
-  count = terraform.workspace == var.cluster_workspace ? 2 : 0
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
   vpc_id            = aws_vpc.cluster[0].id
   cidr_block        = cidrsubnet(var.vpc_cidr, 8, count.index + 2)
@@ -126,6 +126,53 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public[0].id
 }
 
+# Elastic IP for the NAT Gateway
+resource "aws_eip" "cluster" {
+  vpc = true
+}
+
+# NAT Gateway!
+resource "aws_nat_gateway" "cluster" {
+  depends_on = [
+    aws_eip.Nat-Gateway-EIP
+  ]
+
+  # Allocating the Elastic IP to the NAT Gateway!
+  allocation_id = aws_eip.cluster.id
+  
+  # Associating it in the Public Subnet!
+  subnet_id = aws_subnet.public[count.index].id
+  
+  tags = merge(var.cluster_tags, {
+    Name = "bbotiscaf.${var.cluster_tags.cluster}.ngw"
+  })
+}
+
+# Creating a Route Table for the Nat Gateway!
+resource "aws_route_table" "ngw" {
+  vpc_id = aws_vpc.cluster.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.cluster.id
+  }
+
+  tags = merge(var.cluster_tags, {
+    Name = "bbotiscaf.${var.cluster_tags.cluster}.ngw-rt"
+  })
+}
+
+# Creating an Route Table Association of the NAT Gateway route 
+# table with the Private Subnet!
+resource "aws_route_table_association" "Nat-Gateway-RT-Association" {
+
+#  Private Subnet ID for adding this route table to the DHCP server of Private subnet!
+  subnet_id      = aws_subnet.private[count.index].id
+
+# Route Table ID
+  route_table_id = aws_route_table.ngw.id
+}
+
 
 # Shared security group for Lambda functions
 resource "aws_security_group" "lambda_shared" {
@@ -146,30 +193,6 @@ resource "aws_security_group" "lambda_shared" {
     Name = "bbotiscaf.${var.cluster_tags.cluster}.sg.lambda-shared"
   })
 }
-
-# # SQS Queue for Webhook Requests
-# resource "aws_sqs_queue" "normal" {
-#   count = terraform.workspace == var.cluster_workspace ? 1 : 0
-
-#   name = "bbotiscaf-${var.cluster_tags.cluster}-sqs-normal.fifo"
-
-#   fifo_queue                  = true
-#   content_based_deduplication = true
-#   deduplication_scope         = "messageGroup"
-#   fifo_throughput_limit       = "perMessageGroupId"
-#   visibility_timeout_seconds  = 60
-#   sqs_managed_sse_enabled     = true
-#   message_retention_seconds   = 1209600  # 14 days
-
-#   redrive_policy = jsonencode({
-#     deadLetterTargetArn = aws_sqs_queue.dlq[0].arn
-#     maxReceiveCount     = 5
-#   })
-
-#   tags = merge(var.cluster_tags, {
-#     Name = "bbotiscaf.${var.cluster_tags.cluster}.sqs.normal"
-#   })
-# }
 
 # Dead-Letter Queue for messages that fail processing
 resource "aws_sqs_queue" "dlq" {

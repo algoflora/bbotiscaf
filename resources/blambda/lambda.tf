@@ -64,7 +64,7 @@ resource "aws_lambda_function" "lambda-{{lambda-name}}" {
   }
 
   vpc_config {
-    subnet_ids         = data.terraform_remote_state.cluster[0].outputs.aws_subnet_public[*].id
+    subnet_ids         = data.terraform_remote_state.cluster[0].outputs.aws_subnet_private[*].id
     security_group_ids = [data.terraform_remote_state.cluster[0].outputs.aws_security_group_lambda_shared.id]
   }
 
