@@ -25,7 +25,6 @@
 
 (defn- get-bbotiscaf-config
   []
-  (println "get-bbotiscaf-config" (io/resource "bbotiscaf-resources/config.edn"))
   (read-config (io/resource "bbotiscaf-resources/config.edn") {:profile profile}))
 
 
@@ -34,7 +33,6 @@
 
 (defn- get-project-config
   []
-  (println "get-project-config" (io/resource "config.edn"))
   (read-config (io/resource "config.edn") {:profile profile}))
 
 
