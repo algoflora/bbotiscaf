@@ -5,8 +5,10 @@
     [bbotiscaf.misc :refer [throw-error]]
     [bbotiscaf.spec.model :as spec.mdl]
     [malli.core :as m]
-    [pod.huahaiy.datalevin :as d]
     [taoensso.timbre :as log]))
+
+
+(require '[pod.huahaiy.datalevin :as d])
 
 
 (def require-namespaces

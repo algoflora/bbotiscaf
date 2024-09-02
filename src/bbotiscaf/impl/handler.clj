@@ -8,8 +8,10 @@
     [bbotiscaf.misc :refer [validate!]]
     [bbotiscaf.spec.telegram :as spec.tg]
     [malli.core :as m]
-    [pod.huahaiy.datalevin :as d]
     [taoensso.timbre :as log]))
+
+
+(require '[pod.huahaiy.datalevin :as d])
 
 
 (defmulti ^:private handle (fn [type _] type))

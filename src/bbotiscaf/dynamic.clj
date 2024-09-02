@@ -1,9 +1,14 @@
-(ns bbotiscaf.dynamic
-  (:require [pod.huahaiy.datalevin :refer [db]]))
+(ns bbotiscaf.dynamic)
+
+(require '[pod.huahaiy.datalevin :refer [db]])
 
 (def ^:dynamic *dtlv* nil)
 
-(defn dtlv [] (db *dtlv*))
+
+(defn dtlv
+  []
+  (db *dtlv*))
+
 
 (def ^:dynamic *user* nil)
 

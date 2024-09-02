@@ -10,8 +10,10 @@
     [integrant.core :as ig]
     [malli.core :as m]
     [malli.instrument :as mi]
-    [pod.huahaiy.datalevin :as d]
     [taoensso.timbre :as log]))
+
+
+(require '[pod.huahaiy.datalevin :as d])
 
 
 (defn- get-bbotiscaf-schema
