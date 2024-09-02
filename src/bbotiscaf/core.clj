@@ -2,6 +2,7 @@
   (:require
     [actions]
     [bbotiscaf.impl.handler :as h]
+    [bbotiscaf.impl.system :as sys]
     [bbotiscaf.logging :as logging]
     [bbotiscaf.misc :refer [throw-error]]
     [bbotiscaf.spec.action :as spec.act]
@@ -57,6 +58,7 @@
 (defn sqs-receiver
   [records context]
   (setup-logs! context)
+  (sys/startup!)
   (let [rs (:Records records)]
     (log/info "Received SQS message. %d records." (count rs)
               {:records-count (count rs)
