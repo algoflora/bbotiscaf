@@ -3,7 +3,7 @@
     [babashka.deps :refer [clojure]]
     [babashka.fs :as fs]
     [babashka.http-client :as http]
-    [babashka.pods :as pods]
+    [babashka.pods.impl :as pods]
     [babashka.process :refer [shell]]
     [bbotiscaf.blambda.internal :as lib]
     [clojure.edn :as edn]
@@ -25,7 +25,7 @@
           (let [src-path (fs/file source-dir path)
                 tgt-path (fs/file work-dir path)]
             (fs/copy src-path tgt-path))
-          (pods/load-pod pod version)))
+          (pods/resolve-pod pod version)))
       (finally
         (System/setProperty "user.home" home-dir)
         (System/setProperty "os.name" os-name)
