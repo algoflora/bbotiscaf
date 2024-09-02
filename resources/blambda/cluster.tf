@@ -150,7 +150,7 @@ resource "aws_nat_gateway" "cluster" {
 
 # Creating a Route Table for the Nat Gateway!
 resource "aws_route_table" "ngw" {
-  count = terraform.workspace == var.cluster_workspace ? length(aws_nat_gateway.cluster) : 0
+  count = terraform.workspace == var.cluster_workspace ? length(aws_subnet.private) : 0
   
   vpc_id = aws_vpc.cluster[0].id
 
@@ -173,7 +173,7 @@ resource "aws_route_table_association" "ngw" {
   subnet_id      = aws_subnet.private[count.index].id
 
 # Route Table ID
-  route_table_id = aws_route_table.ngw.id
+  route_table_id = aws_route_table.ngw[count.index].id
 }
 
 
