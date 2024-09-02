@@ -1,6 +1,5 @@
  (ns bbotiscaf.impl.e2e.flow
    (:require
-     [babashka.pods :refer [load-pod]]
      [bbotiscaf.dynamic :refer [*dtlv* dtlv]]
      [bbotiscaf.impl.e2e.client :as cl]
      [bbotiscaf.impl.e2e.dummy :as dum]
@@ -17,7 +16,6 @@
      [taoensso.timbre :as log]))
 
 
-(load-pod 'huahaiy/datalevin "0.9.10")
 (require '[pod.huahaiy.datalevin :as d])
 
 

@@ -1,9 +1,15 @@
 (ns bbotiscaf.dynamic
   (:require
-    [babashka.pods :refer [load-pod]]))
+    [babashka.pods :refer [load-pod]]
+    [taoensso.timbre :as log]))
 
 
-(load-pod 'huahaiy/datalevin "0.9.10")
+(let [time-str (with-out-str (time (load-pod 'huahaiy/datalevin "0.9.10")))]
+  (log/info ::datalevin-pod-loaded
+            "Datalevin Pod loaded. %s" time-str
+            {:elapsed-time (Float/parseFloat (re-find #"\d+.?\d*" time-str))}))
+
+
 (require '[pod.huahaiy.datalevin :refer [db]])
 
 (def ^:dynamic *dtlv* nil)

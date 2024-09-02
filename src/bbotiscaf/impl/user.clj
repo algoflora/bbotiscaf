@@ -1,12 +1,10 @@
 (ns bbotiscaf.impl.user
   (:require
-    [babashka.pods :refer [load-pod]]
     [bbotiscaf.dynamic :refer [*dtlv* dtlv]]
     [bbotiscaf.impl.system.app :as app]
     [taoensso.timbre :as log]))
 
 
-(load-pod 'huahaiy/datalevin "0.9.10")
 (require '[pod.huahaiy.datalevin :as d])
 
 
