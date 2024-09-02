@@ -153,5 +153,4 @@
          args (merge (:callback/arguments callback) args)]
      (when-not (true? (:callback/is-service callback))
        (check-handler! *user*))
-     (println "CALL\t" callback func args (find-var func) (requiring-resolve func))
      ((find-var func) args))))

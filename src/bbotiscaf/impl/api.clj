@@ -10,11 +10,22 @@
     [bbotiscaf.misc :refer [throw-error]]
     [bbotiscaf.spec.model :as spec.mdl]
     [bbotiscaf.spec.telegram :as spec.tg]
-    [cheshire.core :refer [generate-string parse-string]]
+    [cheshire.core :refer [generate-string]]
     [clojure.string :as str]
     [clojure.walk :as walk]
     [malli.core :as m]
     [taoensso.timbre :as log]))
+
+
+(defn request
+  [method data]
+  (let [url  (format "https://api.telegram.org/bot%s/%s" @app/bot-token (name method))
+        resp @(http/post url {:content-type :json :body data})]
+    (log/info ::telegram-api-response
+              "Telegram api method %s reponse status %d" method (:status resp)
+              {:method method
+               :data data
+               :response resp})))
 
 
 (defn api-wrap
@@ -210,7 +221,7 @@
 (defn- download-file
   [file-path]
   (let [uri (format "https://api.telegram.org/file/bot%s/%s"
-                    (:bot/token @app/bot-token) file-path)
+                    @app/bot-token file-path)
         bis  (-> uri http/get deref :body)
         file (fs/file fs/temp-dir (java.util.UUID/randomUUID))
         fos  (java.io.FileOutputStream. file)]
