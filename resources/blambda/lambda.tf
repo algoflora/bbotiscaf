@@ -113,11 +113,29 @@ resource "aws_apigatewayv2_integration" "sqs_integration-{{lambda-name}}" {
   integration_type = "AWS_PROXY"
   integration_subtype = "SQS-SendMessage"
   credentials_arn     = data.terraform_remote_state.cluster[0].outputs.api_gateway_sqs_role_arn
+
   request_parameters  = {
     QueueUrl    = aws_sqs_queue.lambda_queue-{{lambda-name}}[0].url
     MessageBody = "$request.body"
-    MessageGroupId = var.lambda_name
+    MessageGroupId = "$request.body.message.from.id"
   }
+
+#   request_templates = {
+#     "application/json" = <<EOF
+# #set($inputRoot = $input.path('$'))
+# Action=SendMessage&MessageGroupId=
+# #if($inputRoot.message && $inputRoot.message.from && $inputRoot.message.from.id)
+#   "FromId-" + $inputRoot.message.from.id
+# #elseif($inputRoot.callback_query && $inputRoot.callback_query.from && $inputRoot.callback_query.from.id)
+#   "FromId-" + $inputRoot.callback_query.from.id
+# #elseif($inputRoot.action && $inputRoot.action.method && $inputRoot.action.timestamp)
+#   "MethodTimestamp-" + $inputRoot.action.method + "-" + $inputRoot.action.timestamp
+# #else
+#   "Default"
+# #end
+# }
+# EOF
+#   }
   
   payload_format_version = "1.0"
   timeout_milliseconds   = 29000

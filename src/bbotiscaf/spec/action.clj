@@ -1,28 +1,35 @@
 (ns bbotiscaf.spec.action
-  (:require [bbotiscaf.spec.commons :refer [Error]]))
+  (:require
+    [bbotiscaf.spec.commons :refer [Error]]))
 
-(def action-schema
-  [:map
-   [:type :string]
-   [:arguments [:map]]])
 
-(def Action-Request
+(def ActionSchema
   [:map
-   [:action action-schema]])
+   [:method :string]
+   [:arguments :map]
+   [:timestamp :int]])
 
-(def action-response-success-schema
+
+(def ActionRequest
   [:map
-   [:action action-schema]
+   [:action ActionSchema]])
+
+
+(def ActionResponseSuccessSchema
+  [:map
+   [:action ActionSchema]
    [:ok [:= true]]
    [:response :any]])
 
-(def action-response-failure-schema
+
+(def ActionResponseFailureSchema
   [:map
-   [:action action-schema]
+   [:action ActionSchema]
    [:ok [:= false]]
    [:error Error]])
 
-(def action-response-schema
+
+(def ActionResponseSchema
   [:or
-   action-response-success-schema
-   action-response-failure-schema])
+   ActionResponseSuccessSchema
+   ActionResponseFailureSchema])

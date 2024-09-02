@@ -1,15 +1,18 @@
 (ns bbotiscaf.blambda.api
-  (:require [babashka.deps :refer [clojure]]
-            [babashka.http-client :as http]
-            [babashka.fs :as fs]
-            [babashka.pods :as pods]
-            [babashka.process :refer [shell]]
-            [bbotiscaf.blambda.internal :as lib]
-            [clojure.java.io :as io]
-            [clojure.edn :as edn]
-            [clojure.string :as str]))
+  (:require
+    [babashka.deps :refer [clojure]]
+    [babashka.fs :as fs]
+    [babashka.http-client :as http]
+    [babashka.pods :as pods]
+    [babashka.process :refer [shell]]
+    [bbotiscaf.blambda.internal :as lib]
+    [clojure.edn :as edn]
+    [clojure.java.io :as io]
+    [clojure.string :as str]))
 
-(defn fetch-pods [{:keys [bb-arch source-dir work-dir] :as opts} pods]
+
+(defn fetch-pods
+  [{:keys [bb-arch source-dir work-dir] :as opts} pods]
   (let [home-dir (System/getProperty "user.home")
         os-name (System/getProperty "os.name")
         os-arch (System/getProperty "os.arch")]
@@ -25,8 +28,9 @@
           (pods/load-pod pod version)))
       (finally
         (System/setProperty "user.home" home-dir)
-        (System/setProperty "os.name" os-name) 
+        (System/setProperty "os.name" os-name)
         (System/setProperty "os.arch" os-arch)))))
+
 
 (defn build-deps-layer
   "Builds layer for dependencies"
@@ -43,7 +47,8 @@
               m2-dir "m2-repo"
               pods-dir ".babashka"
               {:keys [deps pods]} (-> deps-path slurp edn/read-string)
-              pods (merge pods {'huahaiy/datalevin {:version datalevin-version}})]
+              pods (merge pods {'huahaiy/datalevin {:version datalevin-version}})
+              local-repo (str (System/getProperty "user.home") "/.m2/repository")]
           (if (and (empty? deps) (empty? pods))
             (println (format "\nNot building dependencies layer: no deps or pods listed in %s"
                              (str deps-path)))
@@ -51,6 +56,8 @@
               (spit (fs/file work-dir "deps.edn")
                     {:deps (or deps {})
                      :pods (or pods {})
+                     :mvn/repos {"central" {:url "https://repo1.maven.org/maven2/"}
+                                 "local" {:url (str "file://" local-repo)}}
                      :mvn/local-repo (str m2-dir)})
 
               (let [classpath-file (fs/file work-dir "deps-classpath")
@@ -83,6 +90,7 @@
                          "zip -r" deps-zipfile
                          paths))))))))))
 
+
 (defn build-runtime-layer
   "Builds custom runtime layer"
   [{:keys [bb-arch bb-version target-dir work-dir]
@@ -102,8 +110,8 @@
         (when-not (fs/exists? bb-tarball)
           (println "Downloading" bb-url)
           (io/copy
-           (:body (http/get bb-url {:as :stream}))
-           (io/file bb-tarball)))
+            (:body (http/get bb-url {:as :stream}))
+            (io/file bb-tarball)))
 
         (println "Decompressing" bb-tarball "to" work-dir)
         (shell "tar -C" work-dir "-xzf" bb-tarball)
@@ -116,8 +124,10 @@
                "zip" runtime-zipfile
                "bb" "bootstrap" "bootstrap.clj")))))
 
-(defn build-lambda [{:keys [lambda-name source-dir source-files
-                            target-dir work-dir] :as opts}]
+
+(defn build-lambda
+  [{:keys [lambda-name source-dir source-files
+           target-dir work-dir] :as opts}]
   (when (empty? source-files)
     (throw (ex-info "Missing source-files"
                     {:type :blambda/error})))
@@ -137,10 +147,13 @@
         (apply shell {:dir work-dir}
                "zip" lambda-zipfile source-files)))))
 
-(defn build-all [opts]
+
+(defn build-all
+  [opts]
   (build-runtime-layer opts)
   (build-deps-layer opts)
   (build-lambda opts))
+
 
 (defn clean
   "Deletes target and work directories"

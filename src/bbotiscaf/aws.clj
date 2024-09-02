@@ -1,14 +1,17 @@
 (ns bbotiscaf.aws
-  (:require [babashka.fs :as fs]
-            [malli.core :as m]
-            [bbotiscaf.spec.core :as spec]
-            [bbotiscaf.blambda.api :refer [build-all]]
-            [bbotiscaf.blambda.api.terraform :refer [write-config apply!]]))
+  (:require
+    [babashka.fs :as fs]
+    [bbotiscaf.blambda.api :refer [build-all]]
+    [bbotiscaf.blambda.api.terraform :refer [write-config apply!]]
+    [bbotiscaf.spec.core :as spec]
+    [malli.core :as m]))
+
 
 (defn- get-tree
   [dir]
   (->> (fs/glob dir "**.*")
        (filter #(boolean (re-find #".*[^~#]$" (fs/extension %))))))
+
 
 (def default-opts
   {:bb-arch "arm64"
@@ -32,7 +35,10 @@
    :tf-module-dir "modules"
    :work-dir ".work"})
 
-(m/=> deploy! [:=> [:cat spec/user-opts] :nil])
+
+(m/=> deploy! [:=> [:cat spec/UserOpts] :nil])
+
+
 (defn deploy!
   [opts]
   (let [opts (merge default-opts opts)]

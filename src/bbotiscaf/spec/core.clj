@@ -1,13 +1,16 @@
 (ns bbotiscaf.spec.core
-  (:require [bbotiscaf.spec.telegram :as spec.tg]
-            [bbotiscaf.spec.action :as spec.act]))
+  (:require
+    [bbotiscaf.spec.action :as spec.act]
+    [bbotiscaf.spec.telegram :as spec.tg]))
+
 
 (def Request
   [:or
    spec.tg/Update
-   spec.act/Action-Request])
+   spec.act/ActionRequest])
 
-(def user-opts
+
+(def UserOpts
   [:map
    {:closed true}
    [:lambda-name :string]

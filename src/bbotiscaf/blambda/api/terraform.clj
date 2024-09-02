@@ -1,17 +1,23 @@
 (ns bbotiscaf.blambda.api.terraform
-  (:require [babashka.fs :as fs]
-            [babashka.process :refer [shell]]
-            [bbotiscaf.blambda.internal :as lib]
-            [clojure.java.io :as io]
-            [clojure.string :as str]
-            [selmer.parser :as selmer]))
+  (:require
+    [babashka.fs :as fs]
+    [babashka.process :refer [shell]]
+    [bbotiscaf.blambda.internal :as lib]
+    [clojure.java.io :as io]
+    [clojure.string :as str]
+    [selmer.parser :as selmer]))
 
-(defn tf-config-path [{:keys [target-dir tf-config-dir]} filename]
+
+(defn tf-config-path
+  [{:keys [target-dir tf-config-dir]} filename]
   (let [tf-dir (-> (fs/file target-dir tf-config-dir) fs/canonicalize)]
     (fs/file tf-dir filename)))
 
-(defn generate-module [opts]
+
+(defn generate-module
+  [opts]
   (selmer/render (slurp (io/resource "blambda/lambda_layer.tf")) opts))
+
 
 (defn generate-vars
   [opts]
@@ -19,16 +25,17 @@
         lambda-zipfile (lib/lambda-zipfile opts)
         deps-zipfile (lib/deps-zipfile opts)]
     (selmer/render
-     (slurp (io/resource "blambda/blambda.tfvars"))
-     (merge opts
-            {:runtime-layer-compatible-architectures (lib/runtime-layer-architectures opts)
-             :runtime-layer-compatible-runtimes (lib/runtime-layer-runtimes opts)
-             :runtime-layer-filename runtime-zipfile
-             :lambda-filename lambda-zipfile
-             :lambda-architecture (first (lib/runtime-layer-architectures opts))
-             :deps-layer-compatible-architectures (lib/deps-layer-architectures opts)
-             :deps-layer-compatible-runtimes (lib/deps-layer-runtimes opts)
-             :deps-layer-filename deps-zipfile}))))
+      (slurp (io/resource "blambda/blambda.tfvars"))
+      (merge opts
+             {:runtime-layer-compatible-architectures (lib/runtime-layer-architectures opts)
+              :runtime-layer-compatible-runtimes (lib/runtime-layer-runtimes opts)
+              :runtime-layer-filename runtime-zipfile
+              :lambda-filename lambda-zipfile
+              :lambda-architecture (first (lib/runtime-layer-architectures opts))
+              :deps-layer-compatible-architectures (lib/deps-layer-architectures opts)
+              :deps-layer-compatible-runtimes (lib/deps-layer-runtimes opts)
+              :deps-layer-filename deps-zipfile}))))
+
 
 (defn run-tf-cmd!
   ([opts cmd] (run-tf-cmd! opts cmd false))
@@ -36,27 +43,31 @@
    (let [config-file (tf-config-path opts "lambda.tf")]
      (when-not (fs/exists? config-file)
        (throw
-        (ex-info
-         (format "Missing Terraform config file %s; run `write-config`"
-                 (str config-file))
-         {:type :blambda/missing-file
-          :filename (str config-file)})))
+         (ex-info
+           (format "Missing Terraform config file %s; run `write-config`"
+                   (str config-file))
+           {:type :blambda/missing-file
+            :filename (str config-file)})))
      (shell {:dir (str (fs/parent config-file)) :continue continue?} cmd))))
 
-(defn apply! [opts]
+
+(defn apply!
+  [opts]
   (let [cluster-workspace (str "cluster-" (:cluster opts))
         lambda-workspace  (format "lambda-%s-%s" (:cluster opts) (:lambda-name opts))]
     (run-tf-cmd! opts "terraform init")
     (run-tf-cmd! opts (str "terraform workspace new " cluster-workspace) true)
     (run-tf-cmd! opts (str "terraform workspace select " cluster-workspace))
-    (run-tf-cmd! opts "terraform apply" #_" -auto-approve")
+    (run-tf-cmd! opts "terraform apply -auto-approve")
     (run-tf-cmd! opts (str "terraform workspace new " lambda-workspace) true)
     (run-tf-cmd! opts (str "terraform workspace select " lambda-workspace))
     (run-tf-cmd! opts "terraform apply -auto-approve")
     (run-tf-cmd! opts "terraform workspace select default")))
 
-(defn write-config [{:keys [lambda-name tf-module-dir lambda-env-vars cluster tfstate-bucket target-dir]
-                     :as opts}]
+
+(defn write-config
+  [{:keys [lambda-name tf-module-dir lambda-env-vars cluster tfstate-bucket target-dir]
+    :as opts}]
   (let [opts (assoc opts
                     :lambda-filename (format "%s.zip" lambda-name))
         lambda-layer-vars (generate-vars opts)
@@ -81,6 +92,7 @@
     (spit vars-file lambda-layer-vars)
     (println "Writing lambda layers module:" (str module-file))
     (spit module-file lambda-layer-module)))
+
 
 (comment
   (require '[bbotiscaf.aws :as aws])
