@@ -1,5 +1,6 @@
  (ns bbotiscaf.impl.e2e.flow
    (:require
+     [babashka.pods :refer [load-pod]]
      [bbotiscaf.dynamic :refer [*dtlv* dtlv]]
      [bbotiscaf.impl.e2e.client :as cl]
      [bbotiscaf.impl.e2e.dummy :as dum]
@@ -13,8 +14,11 @@
      [clojure.test :refer [is testing]]
      [clojure.walk :refer [postwalk]]
      [malli.core :as m]
-     [pod.huahaiy.datalevin :as d]
      [taoensso.timbre :as log]))
+
+
+(load-pod 'huahaiy/datalevin "0.9.10")
+(require '[pod.huahaiy.datalevin :as d])
 
 
 (m/=> str?->re [:-> [:or :string Regexp] Regexp])

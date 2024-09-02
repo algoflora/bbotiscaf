@@ -1,5 +1,6 @@
 (ns bbotiscaf.impl.system
   (:require
+    [babashka.pods :refer [load-pod]]
     ;; [bbotiscaf.impl.api]
     [bbotiscaf.impl.config :as conf]
     [bbotiscaf.impl.e2e]
@@ -13,6 +14,7 @@
     [taoensso.timbre :as log]))
 
 
+(load-pod 'huahaiy/datalevin "0.9.10")
 (require '[pod.huahaiy.datalevin :as d])
 
 

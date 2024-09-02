@@ -1,5 +1,6 @@
 (ns bbotiscaf.impl.callback
   (:require
+    [babashka.pods :refer [load-pod]]
     [bbotiscaf.dynamic :refer [*dtlv* dtlv *user*]]
     [bbotiscaf.impl.system.app :as app]
     [bbotiscaf.misc :refer [throw-error]]
@@ -8,6 +9,7 @@
     [taoensso.timbre :as log]))
 
 
+(load-pod 'huahaiy/datalevin "0.9.10")
 (require '[pod.huahaiy.datalevin :as d])
 
 

@@ -1,5 +1,9 @@
-(ns bbotiscaf.dynamic)
+(ns bbotiscaf.dynamic
+  (:require
+    [babashka.pods :refer [load-pod]]))
 
+
+(load-pod 'huahaiy/datalevin "0.9.10")
 (require '[pod.huahaiy.datalevin :refer [db]])
 
 (def ^:dynamic *dtlv* nil)
