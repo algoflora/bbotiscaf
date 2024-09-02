@@ -37,13 +37,15 @@
         opts   {:validate-data? true
                 :closed-schema? true
                 :auto-entity-time? true}
-        cn-str (or conn-str (format "/tmp/bbotiscaf-test/%s" (str (java.util.UUID/randomUUID))) #_(str (fs/create-temp-dir {:prefix "bbotiscaf-test"})))]
+        cn-str (or conn-str (format "/tmp/bbotiscaf-test/%s" (str (java.util.UUID/randomUUID))))]
     (log/debug ::init-db-conn
                "Applying :db/conn %s..." cn-str
                {:conn-str cn-str
                 :schema schema
                 :opts opts})
-    (d/get-conn cn-str schema #_opts)))
+    (let [cn (d/get-conn cn-str schema #_opts)]
+      (clojure.pprint/pprint (d/datoms (d/db cn) :eav))
+      cn)))
 
 
 (defmethod ig/halt-key! :db/conn

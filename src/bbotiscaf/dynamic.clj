@@ -4,7 +4,7 @@
 
 
 (let [time-str (with-out-str (time (load-pod 'huahaiy/datalevin "0.9.10")))]
-  (println "Datalevin Pod loaded. %s" time-str))
+  (println "Datalevin Pod loaded. " time-str))
 
 
 (require '[pod.huahaiy.datalevin :refer [db]])
