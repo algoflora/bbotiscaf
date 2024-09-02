@@ -20,7 +20,8 @@
 (defn request
   [method data]
   (let [url  (format "https://api.telegram.org/bot%s/%s" @app/bot-token (name method))
-        resp @(http/post url {:content-type :json :body data})]
+        resp @(http/post url {:headers {:content-type "application/json"}
+                              :body (generate-string data)})]
     (log/info ::telegram-api-response
               "Telegram api method %s reponse status %d" method (:status resp)
               {:method method
