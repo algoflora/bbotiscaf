@@ -43,9 +43,7 @@
                {:conn-str cn-str
                 :schema schema
                 :opts opts})
-    (let [cn (d/get-conn cn-str schema #_opts)]
-      (clojure.pprint/pprint (d/datoms (d/db cn) :eav))
-      cn)))
+    (d/get-conn cn-str schema #_opts)))
 
 
 (defmethod ig/halt-key! :db/conn
