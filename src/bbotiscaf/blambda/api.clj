@@ -64,11 +64,12 @@
                     local-classpath-file (fs/file work-dir "deps-local-classpath")
                     deps-base-dir (str (fs/path (fs/cwd) work-dir))
                     classpath
-                    (with-out-str
-                      (clojure ["-Spath"]
-                               {:dir work-dir
-                                :env (assoc (into {} (System/getenv))
-                                            "GITLIBS" (str gitlibs-dir))}))
+                    (str "resources:"
+                         (with-out-str
+                           (clojure ["-Spath"]
+                                    {:dir work-dir
+                                     :env (assoc (into {} (System/getenv))
+                                                 "GITLIBS" (str gitlibs-dir))})))
                     deps-classpath (str/replace classpath deps-base-dir "/opt")]
                 (println "Classpath before transforming:" classpath)
                 (println "Classpath after transforming:" deps-classpath)

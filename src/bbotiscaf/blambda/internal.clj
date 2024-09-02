@@ -77,13 +77,12 @@
   [{:keys [source-dir work-dir resource?] :as opts}
    filenames]
   (doseq [f filenames
-          :let [v "123"
-                source-file (cond
+          :let [source-file (cond
                               resource? (io/resource (str "blambda/" f))
                               source-dir (fs/file source-dir f)
                               :else f)
                 parent (if (and work-dir (fs/parent f)) (fs/file work-dir (fs/parent f)) (fs/parent f))]]
-    (println "Adding file:" (str f) v (fs/file source-dir f))
+    (println "Adding file:" (str f) (fs/file source-dir f))
     (when parent
       (fs/create-dirs parent))
     (fs/delete-if-exists (fs/file work-dir f))
