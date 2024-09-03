@@ -44,6 +44,17 @@
     (handle-action req)))
 
 
+(m/=> log-and-prepare [:-> spec.aws/SQSRecordSchema spec/Request])
+
+
+(defn- log-and-prepare
+  [rec]
+  (log/debug ::handling-record
+             "Handling SQS record. %s" rec
+             {:record rec})
+  (-> rec :body (json/parse-string true)))
+
+
 (defn- setup-logs!
   [context]
   (logging/set-lambda-context! context)
@@ -51,8 +62,8 @@
 
 
 (m/=> sqs-receiver [:=> [:cat
-                         spec.aws/SQS-Records-Bunch
-                         spec.aws/SQS-Context] :nil])
+                         spec.aws/SQSRecordsBunch
+                         spec.aws/SQSContext] :nil])
 
 
 (defn sqs-receiver
@@ -66,7 +77,4 @@
                :records rs
                :context context})
     (doseq [r rs]
-      (log/debug ::hadling-record
-                 "Handling SQS record. %s" r
-                 {:record r :context context})
-      (handler (-> r :body (json/parse-string true))))))
+      (-> r log-and-prepare handler))))

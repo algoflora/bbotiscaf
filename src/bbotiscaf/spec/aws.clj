@@ -1,6 +1,7 @@
 (ns bbotiscaf.spec.aws)
 
-(def SQS-Context
+
+(def SQSContext
   [:map
    {:closed true}
    ["content-length" {:optional true} :string]
@@ -11,7 +12,8 @@
    ["lambda-runtime-invoked-function-arn" :string]
    ["lambda-runtime-trace-id" :string]])
 
-(def sqs-record-schema
+
+(def SQSRecordSchema
   [:map
    {:closed true}
    [:md5OfBody :string]
@@ -33,6 +35,7 @@
      [:MessageDeduplicationId :string]
      [:ApproximateFirstReceiveTimestamp :string]]]])
 
-(def SQS-Records-Bunch
+
+(def SQSRecordsBunch
   [:map
-   [:Records [:vector sqs-record-schema]]])
+   [:Records [:vector SQSRecordSchema]]])
