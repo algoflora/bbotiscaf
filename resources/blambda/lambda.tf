@@ -105,32 +105,53 @@ resource "aws_sqs_queue" "lambda_queue-{{lambda-name}}" {
   })
 }
 
-# API Gateway Integration for the SQS Queue
-resource "aws_apigatewayv2_integration" "sqs_integration-{{lambda-name}}" {
+# API Gateway Resource
+resource "aws_api_gateway_resource" "api_resource-{{lambda-name}}" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
 
-  api_id           = data.terraform_remote_state.cluster[0].outputs.api_gateway_id
-  integration_type = "AWS_PROXY"
-  integration_subtype = "SQS-SendMessage"
-  credentials_arn     = data.terraform_remote_state.cluster[0].outputs.api_gateway_sqs_role_arn
-
-  request_parameters  = {
-    QueueUrl    = aws_sqs_queue.lambda_queue-{{lambda-name}}[0].url
-    MessageBody = "$request.body"
-    MessageGroupId = "$request.body.message.from.id || $request.body.callback_query.from.id"
-  }
-  
-  payload_format_version = "1.0"
-  timeout_milliseconds   = 29000
+  rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+  parent_id   = data.terraform_remote_state.cluster[0].outputs.api_gateway.root_resource_id
+  path_part   = "${var.lambda_name}"
 }
 
-# API Gateway Route for the Lambda function
-resource "aws_apigatewayv2_route" "lambda_route-{{lambda-name}}" {
+resource "aws_api_gateway_method" "api_method-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+  
+  rest_api_id   = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+  resource_id   = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+# API Gateway Integration for the SQS Queue
+resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
 
-  api_id    = data.terraform_remote_state.cluster[0].outputs.api_gateway_id
-  route_key = "POST /${var.lambda_name}"
-  target    = "integrations/${aws_apigatewayv2_integration.sqs_integration-{{lambda-name}}[0].id}"
+  rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+  resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
+  http_method = aws_api_gateway_method.api_method[0].http_method
+
+  integration_http_method = "POST"
+  integration_type = "AWS"
+  credentials = data.terraform_remote_state.cluster[0].outputs.api_gateway_sqs_role_arn
+
+  passthrough_behavior = "NEVER"
+
+  request_templates = {
+    "application/json" = <<EOF
+    Action=SendMessage&MessageBody=$input.body&MessageGroupId=
+#set($root = $input.body('$'))
+#if($root.message != null && $root.message.from != null)"from-id-"+$root.message.from.id
+#elseif($root.callback_query != null && $root.callback_query.from != null)"from-id-"+$root.callback_query.from.id
+#elseif($root.action)"action"
+#else"unknown"
+#end
+    EOF
+  }
+
+  uri = "arn:aws:apigateway:${var.region}:sqs:path/${aws_sqs_queue.lambda_queue-{{lambda-name}}.name}"
+
+  timeout_milliseconds   = 29000
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_trigger-{{lambda-name}}" {

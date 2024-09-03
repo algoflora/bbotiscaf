@@ -214,24 +214,42 @@ resource "aws_sqs_queue" "dlq" {
 }
 
 # API Gateway
-resource "aws_apigatewayv2_api" "cluster" {
+resource "aws_api_gateway_rest_api" "cluster" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
-  name          = "bbotiscaf.${var.cluster_tags.cluster}.apigw"
-  protocol_type = "HTTP"
+  name = "bbotiscaf.${var.cluster_tags.cluster}.apigw"
 
   tags = merge(var.cluster_tags, {
     Name = "bbotiscaf.${var.cluster_tags.cluster}.apigw"
   })
 }
 
-# API Gateway Stage
-resource "aws_apigatewayv2_stage" "cluster" {
+# API Gateway Deployment
+resource "aws_api_gateway_deployment" "cluster" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
-  api_id      = aws_apigatewayv2_api.cluster[0].id
-  name        = "$default"
-  auto_deploy = true
+  rest_api_id = aws_api_gateway_rest_api.example.id
+
+  triggers = {
+    redeployment = timestamp()
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = merge(var.cluster_tags, {
+    Name = "bbotiscaf.${var.cluster_tags.cluster}.apigw.deployment"
+  })
+}
+
+# API Gateway Stage
+resource "aws_api_gateway_stage" "cluster" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  rest_api_id   = aws_apigatewayv2_api.cluster[0].id
+  stage_name    = "$default"
+  deployment_id = aws_api_gateway_deployment.cluster[0].id
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway[0].arn
@@ -456,8 +474,8 @@ resource "aws_security_group_rule" "lambda_to_efs" {
 }
 
 
-output "api_gateway_id" {
-  value = try(aws_apigatewayv2_api.cluster[0].id, null)
+output "api_gateway" {
+  value = try(aws_api_gateway_rest_api.cluster[0], null)
 }
 
 output "api_gateway_endpoint" {
