@@ -24,7 +24,7 @@
                                      :body (generate-string data)})
                      :body
                      #(try (parse-string (:body %) true)
-                           (catch com.fasterxml.jackson.core.JsonParseException _ (:body %))))]
+                           (catch Throwable _ (:body %))))]
     (log/debug ::telegram-api-request
                "Telegram API request was sent. ")
     (log/info ::telegram-api-response
