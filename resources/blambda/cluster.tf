@@ -228,7 +228,7 @@ resource "aws_api_gateway_rest_api" "cluster" {
 resource "aws_api_gateway_deployment" "cluster" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
-  rest_api_id = aws_api_gateway_rest_api.example.id
+  rest_api_id = aws_api_gateway_rest_api.cluster[0].id
 
   triggers = {
     redeployment = timestamp()
@@ -476,14 +476,6 @@ resource "aws_security_group_rule" "lambda_to_efs" {
 
 output "api_gateway" {
   value = try(aws_api_gateway_rest_api.cluster[0], null)
-}
-
-output "api_gateway_endpoint" {
-  value = try(aws_apigatewayv2_api.cluster[0].api_endpoint, null)
-}
-
-output "api_gateway_execution_arn" {
-  value = try(aws_apigatewayv2_api.cluster[0].execution_arn, null)
 }
 
 output "api_gateway_sqs_role_arn" {

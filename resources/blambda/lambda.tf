@@ -129,7 +129,7 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
 
   rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
   resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
-  http_method = aws_api_gateway_method.api_method[0].http_method
+  http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
 
   integration_http_method = "POST"
   integration_type = "AWS"
@@ -149,7 +149,7 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
     EOF
   }
 
-  uri = "arn:aws:apigateway:${var.region}:sqs:path/${aws_sqs_queue.lambda_queue-{{lambda-name}}.name}"
+  uri = "arn:aws:apigateway:${var.region}:sqs:path/${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].name}"
 
   timeout_milliseconds   = 29000
 }
