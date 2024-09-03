@@ -60,9 +60,13 @@
   (setup-logs! context)
   (sys/startup!)
   (let [rs (:Records records)]
-    (log/info "Received SQS message. %d records." (count rs)
+    (log/info ::sqs-message-received
+              "Received SQS message. %d records." (count rs)
               {:records-count (count rs)
                :records rs
                :context context})
     (doseq [r rs]
+      (log/debug ::hadling-record
+                 "Handling SQS record. %s" r
+                 {:record r :context context})
       (handler (-> r :body (json/parse-string true))))))
