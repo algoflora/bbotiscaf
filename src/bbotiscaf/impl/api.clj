@@ -26,12 +26,12 @@
                      #(try (parse-string (:body %) true)
                            (catch Throwable _ (:body %))))]
     (log/debug ::telegram-api-request
-               "Telegram API request was sent. ")
+               "Telegram API request was sent")
     (log/info ::telegram-api-response
               "Telegram api method %s reponse status %d" method (:status resp)
               {:method method
                :data data
-               :response (assoc resp)})
+               :response resp})
     (if (-> resp :body :ok)
       (-> resp :body :result)
       (log/warn ::bad-telegram-api-response
