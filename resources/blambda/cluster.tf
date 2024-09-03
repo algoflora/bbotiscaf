@@ -224,30 +224,51 @@ resource "aws_api_gateway_rest_api" "cluster" {
   })
 }
 
-# Mock API Gateway Resource
-resource "aws_api_gateway_resource" "mock" {
+# Ping API Gateway Resource
+resource "aws_api_gateway_resource" "ping" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
   parent_id   = aws_api_gateway_rest_api.cluster[0].root_resource_id
-  path_part   = "mock"
+  path_part   = "ping"
   rest_api_id = aws_api_gateway_rest_api.cluster[0].id
 }
 
-# Mock API Gateway Method
-resource "aws_api_gateway_method" "mock" {
+# Ping API Gateway Method
+resource "aws_api_gateway_method" "ping" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
   authorization = "NONE"
   http_method   = "GET"
-  resource_id   = aws_api_gateway_resource.mock[0].id
+  resource_id   = aws_api_gateway_resource.ping[0].id
   rest_api_id   = aws_api_gateway_rest_api.cluster[0].id
+}
+
+# Ping API Gateway Integration
+resource "aws_api_gateway_integration" "ping" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+  resource_id = aws_api_gateway_resource.ping[0].id
+  http_method = aws_api_gateway_method.ping[0].http_method
+
+  type = "MOCK"
+}
+
+# Ping API Gateway Integration Response
+resource "aws_api_gateway_method_response" "ping" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.cluster[0].id
+  resource_id = aws_api_gateway_resource.ping[0].id
+  http_method = aws_api_gateway_method.pong[0].http_method
+  status_code = "200"
 }
 
 # API Gateway Deployment
 resource "aws_api_gateway_deployment" "cluster" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
-  depends_on = [aws_api_gateway_method.mock]
+  depends_on = [aws_api_gateway_method.ping[0]]
   
   rest_api_id = aws_api_gateway_rest_api.cluster[0].id
 
