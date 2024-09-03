@@ -380,6 +380,14 @@ resource "aws_iam_role_policy" "api_gateway_cloudwatch" {
   })
 }
 
+# API Gateway Account
+resource "aws_api_gateway_account" "cluster" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  cloudwatch_role_arn = aws_iam_role.api_gateway_cloudwatch[0].arn
+}
+
+
 # IAM Role for API Gateway to send Messages to SQS
 resource "aws_iam_role" "api_gateway_sqs" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
