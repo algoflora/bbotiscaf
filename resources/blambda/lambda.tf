@@ -137,7 +137,7 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
 
   integration_http_method = "POST"
-  integration_type = "AWS"
+  type = "AWS"
   credentials = data.terraform_remote_state.cluster[0].outputs.api_gateway_sqs_role_arn
 
   passthrough_behavior = "NEVER"
@@ -157,10 +157,6 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   uri = "arn:aws:apigateway:${var.region}:sqs:path/${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].name}"
 
   timeout_milliseconds   = 29000
-
-  tags = merge(local.lambda_tags, {
-    Name = "bbotiscaf.${local.lambda_tags.cluster}.sqs_integration.${var.lambda_name}"
-  })
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_trigger-{{lambda-name}}" {
