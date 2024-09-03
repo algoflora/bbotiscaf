@@ -54,14 +54,17 @@
 (defn apply!
   [opts]
   (let [cluster-workspace (str "cluster-" (:cluster opts))
-        lambda-workspace  (format "lambda-%s-%s" (:cluster opts) (:lambda-name opts))]
+        lambda-workspace  (format "lambda-%s-%s" (:cluster opts) (:lambda-name opts))
+        auto-approve?     (if (and (coll? *command-line-args*)
+                                   (some #{"--auto-approve"} *command-line-args*))
+                            " -auto-approve" nil)]
     (run-tf-cmd! opts "terraform init")
     (run-tf-cmd! opts (str "terraform workspace new " cluster-workspace) true)
     (run-tf-cmd! opts (str "terraform workspace select " cluster-workspace))
-    (run-tf-cmd! opts "terraform apply -auto-approve")
+    (run-tf-cmd! opts (str "terraform apply" auto-approve?))
     (run-tf-cmd! opts (str "terraform workspace new " lambda-workspace) true)
     (run-tf-cmd! opts (str "terraform workspace select " lambda-workspace))
-    (run-tf-cmd! opts "terraform apply -auto-approve")
+    (run-tf-cmd! opts (str "terraform apply" auto-approve?))
     (run-tf-cmd! opts "terraform workspace select default")))
 
 
