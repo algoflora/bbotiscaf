@@ -10,7 +10,7 @@
     [bbotiscaf.misc :refer [throw-error]]
     [bbotiscaf.spec.model :as spec.mdl]
     [bbotiscaf.spec.telegram :as spec.tg]
-    [cheshire.core :refer [generate-string]]
+    [cheshire.core :refer [generate-string parse-string]]
     [clojure.string :as str]
     [clojure.walk :as walk]
     [malli.core :as m]
@@ -20,15 +20,18 @@
 (defn request
   [method data]
   (let [url  (format "https://api.telegram.org/bot%s/%s" @app/bot-token (name method))
-        resp (http/post url {:headers {:content-type "application/json"}
-                             :body (generate-string data)})]
+        resp (update (http/post url {:headers {:content-type "application/json"}
+                                     :body (generate-string data)})
+                     :body
+                     #(try (parse-string (:body %) true)
+                           (catch com.fasterxml.jackson.core.JsonParseException _ (:body %))))]
     (log/debug ::telegram-api-request
                "Telegram API request was sent. ")
     (log/info ::telegram-api-response
               "Telegram api method %s reponse status %d" method (:status resp)
               {:method method
                :data data
-               :response resp})
+               :response (assoc resp)})
     (if (-> resp :body :ok)
       (-> resp :body :result)
       (log/warn ::bad-telegram-api-response
