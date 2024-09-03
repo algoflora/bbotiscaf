@@ -129,7 +129,7 @@ resource "aws_route_table_association" "public" {
 # Elastic IP for the NAT Gateway
 resource "aws_eip" "cluster" {
   count = terraform.workspace == var.cluster_workspace ? length(aws_subnet.public) : 0
-  
+
   vpc = true
 }
 
@@ -139,10 +139,10 @@ resource "aws_nat_gateway" "cluster" {
 
   # Allocating the Elastic IP to the NAT Gateway!
   allocation_id = aws_eip.cluster[count.index].id
-  
+
   # Associating it in the Public Subnet!
   subnet_id = aws_subnet.public[count.index].id
-  
+
   tags = merge(var.cluster_tags, {
     Name = "bbotiscaf.${var.cluster_tags.cluster}.ngw"
   })
@@ -151,7 +151,7 @@ resource "aws_nat_gateway" "cluster" {
 # Creating a Route Table for the Nat Gateway!
 resource "aws_route_table" "ngw" {
   count = terraform.workspace == var.cluster_workspace ? length(aws_subnet.private) : 0
-  
+
   vpc_id = aws_vpc.cluster[0].id
 
   route {
@@ -168,11 +168,11 @@ resource "aws_route_table" "ngw" {
 # table with the Private Subnet!
 resource "aws_route_table_association" "ngw" {
   count = terraform.workspace == var.cluster_workspace ? length(aws_subnet.private) : 0
-  
-#  Private Subnet ID for adding this route table to the DHCP server of Private subnet!
+
+  #  Private Subnet ID for adding this route table to the DHCP server of Private subnet!
   subnet_id      = aws_subnet.private[count.index].id
 
-# Route Table ID
+  # Route Table ID
   route_table_id = aws_route_table.ngw[count.index].id
 }
 

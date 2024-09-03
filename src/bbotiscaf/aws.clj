@@ -24,7 +24,6 @@
    :lambda-memory-size 512
    ;; :lambda-name
    ;; :cluster
-   :datalevin-version "0.9.10"
    :lambda-runtime "provided.al2023"
    :lambda-timeout 5
    :runtime-layer-name "blambda-layer"
