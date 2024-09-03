@@ -375,6 +375,13 @@ resource "aws_iam_role_policy" "api_gateway_cloudwatch" {
           "logs:FilterLogEvents"
         ]
         Resource = "${aws_cloudwatch_log_group.api_gateway[0].arn}:*"
+      },
+      {
+	Effect = "Allow"
+	Action = [
+	  "apigateway:UpdateAccount"
+	]
+	Resource = "*"
       }
     ]
   })
