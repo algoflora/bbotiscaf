@@ -44,15 +44,15 @@
     (handle-action req)))
 
 
-(m/=> log-and-prepare [:-> spec.aws/SQSRecordSchema spec/Request])
+(m/=> log-and-handle [:-> spec.aws/SQSRecordSchema nil])
 
 
-(defn- log-and-prepare
+(defn- log-and-handle
   [rec]
   (log/debug ::handling-record
              "Handling SQS record. %s" rec
              {:record rec})
-  (-> rec :body (json/parse-string true)))
+  (-> rec :body (json/parse-string true) handler))
 
 
 (defn- setup-logs!
@@ -76,4 +76,5 @@
               {:records-count (count rs)
                :records rs
                :context context})
-    (dorun (map #(-> % log-and-prepare handler) rs))))
+    (doseq [r rs]
+      (log-and-handle r))))
