@@ -247,6 +247,8 @@ resource "aws_api_gateway_method" "mock" {
 resource "aws_api_gateway_deployment" "cluster" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
+  depends_on = [aws_api_gateway_method.mock]
+  
   rest_api_id = aws_api_gateway_rest_api.cluster[0].id
 
   triggers = {
