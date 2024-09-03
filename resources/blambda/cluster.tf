@@ -224,6 +224,25 @@ resource "aws_api_gateway_rest_api" "cluster" {
   })
 }
 
+# Mock API Gateway Resource
+resource "aws_api_gateway_resource" "mock" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  parent_id   = aws_api_gateway_rest_api.cluster[0].root_resource_id
+  path_part   = "mock"
+  rest_api_id = aws_api_gateway_rest_api.cluster[0].id
+}
+
+# Mock API Gateway Method
+resource "aws_api_gateway_method" "mock" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  authorization = "NONE"
+  http_method   = "GET"
+  resource_id   = aws_api_gateway_resource.mock[0].id
+  rest_api_id   = aws_api_gateway_rest_api.cluster[0].id
+}
+
 # API Gateway Deployment
 resource "aws_api_gateway_deployment" "cluster" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
