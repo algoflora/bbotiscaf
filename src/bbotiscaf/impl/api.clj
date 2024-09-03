@@ -209,7 +209,10 @@
   (let [argm       (prepare-arguments-map {:text text :entities []} kbd optm user)
         new-msg    (send-message-to-chat argm (to-edit? optm user))
         new-msg-id (:message_id new-msg)]
-    (println "SEND_TO_CHAT\t" optm new-msg-id new-msg user)
+    (println "FUCK!")
+    (log/debug ::send-to-chat-message
+               "Send to chat message: %s %s %s %s" optm new-msg-id new-msg user
+               {})
     (when (and (not (:temp optm)) (not= new-msg-id (:msg-id user)))
       (u/set-msg-id user new-msg-id))
     (set-callbacks-message-id user new-msg)))
