@@ -9,6 +9,11 @@ variable "lambda_workspace" {
   default = "lambda-{{cluster}}-{{lambda-name}}"
 }
 
+variable "region" {
+  type = string
+  default = "ap-southeast-1"
+}
+
 data "terraform_remote_state" "cluster" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
   
@@ -112,6 +117,10 @@ resource "aws_api_gateway_resource" "api_resource-{{lambda-name}}" {
   rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
   parent_id   = data.terraform_remote_state.cluster[0].outputs.api_gateway.root_resource_id
   path_part   = "${var.lambda_name}"
+
+  tags = merge(local.lambda_tags, {
+    Name = "bbotiscaf.${local.lambda_tags.cluster}.api_resource.${var.lambda_name}"
+  })
 }
 
 resource "aws_api_gateway_method" "api_method-{{lambda-name}}" {
@@ -121,6 +130,10 @@ resource "aws_api_gateway_method" "api_method-{{lambda-name}}" {
   resource_id   = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
   http_method   = "POST"
   authorization = "NONE"
+
+  tags = merge(local.lambda_tags, {
+    Name = "bbotiscaf.${local.lambda_tags.cluster}.api_method.${var.lambda_name}"
+  })
 }
 
 # API Gateway Integration for the SQS Queue
@@ -152,6 +165,10 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   uri = "arn:aws:apigateway:${var.region}:sqs:path/${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].name}"
 
   timeout_milliseconds   = 29000
+
+  tags = merge(local.lambda_tags, {
+    Name = "bbotiscaf.${local.lambda_tags.cluster}.sqs_integration.${var.lambda_name}"
+  })
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_trigger-{{lambda-name}}" {

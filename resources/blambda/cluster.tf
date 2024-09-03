@@ -237,10 +237,6 @@ resource "aws_api_gateway_deployment" "cluster" {
   lifecycle {
     create_before_destroy = true
   }
-
-  tags = merge(var.cluster_tags, {
-    Name = "bbotiscaf.${var.cluster_tags.cluster}.apigw.deployment"
-  })
 }
 
 # API Gateway Stage
