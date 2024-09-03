@@ -36,8 +36,6 @@
   "Builds layer for dependencies"
   [{:keys [deps-path target-dir work-dir] :as opts}]
   (let [deps-zipfile (lib/deps-zipfile opts)
-        rebuild-bbotiscaf? (and (coll? *command-line-args*)
-                                (some #{"--rebuild-bbotiscaf"} *command-line-args*))
         rebuild-deps? (and (coll? *command-line-args*)
                            (some #{"--rebuild-deps"} *command-line-args*))]
     (if (and (empty? (fs/modified-since deps-zipfile deps-path))
@@ -57,8 +55,6 @@
             (println (format "\nNot building dependencies layer: no deps or pods listed in %s"
                              (str deps-path)))
             (do
-              (when rebuild-bbotiscaf?
-                (fs/delete-tree (fs/file work-dir m2-dir "algoflora" "bbotiscaf")))
               (when rebuild-deps?
                 (fs/delete-tree (fs/file work-dir m2-dir)))
               (spit (fs/file work-dir "deps.edn")
