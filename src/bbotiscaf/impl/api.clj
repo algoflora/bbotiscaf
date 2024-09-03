@@ -28,7 +28,8 @@
               "Telegram api method %s reponse status %d" method (:status resp)
               {:method method
                :data data
-               :response resp})))
+               :response resp})
+    (:body resp)))
 
 
 (defn api-wrap
@@ -209,7 +210,6 @@
   (let [argm       (prepare-arguments-map {:text text :entities []} kbd optm user)
         new-msg    (send-message-to-chat argm (to-edit? optm user))
         new-msg-id (:message_id new-msg)]
-    (println "FUCK!")
     (log/debug ::send-to-chat-message
                "Send to chat message: %s %s %s %s" optm new-msg-id new-msg user
                {})

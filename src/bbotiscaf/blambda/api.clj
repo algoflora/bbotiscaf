@@ -91,7 +91,8 @@
                                          (remove nil?)))]
                   (apply shell {:dir work-dir}
                          "zip -r" deps-zipfile
-                         paths))))))))))
+                         paths))))))
+        (println "Finished building deps layer!")))))
 
 
 (defn build-runtime-layer
