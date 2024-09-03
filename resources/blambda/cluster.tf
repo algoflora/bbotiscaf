@@ -480,6 +480,10 @@ output "aws_subnet_public" {
   value = try(aws_subnet.public[*], null)
 }
 
+output "aws_subnet_private" {
+  value = try(aws_subnet.private[*], null)
+}
+
 output "aws_security_group_lambda_shared" {
   value = try(aws_security_group.lambda_shared[0], null)
 }
