@@ -126,10 +126,6 @@ resource "aws_api_gateway_method" "api_method-{{lambda-name}}" {
   resource_id   = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
   http_method   = "POST"
   authorization = "NONE"
-
-  tags = merge(local.lambda_tags, {
-    Name = "bbotiscaf.${local.lambda_tags.cluster}.api_method.${var.lambda_name}"
-  })
 }
 
 # API Gateway Integration for the SQS Queue
