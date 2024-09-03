@@ -130,7 +130,7 @@ resource "aws_route_table_association" "public" {
 resource "aws_eip" "cluster" {
   count = terraform.workspace == var.cluster_workspace ? length(aws_subnet.public) : 0
 
-  vpc = true
+  domain = "vpc"
 }
 
 # NAT Gateway!
@@ -243,7 +243,7 @@ resource "aws_api_gateway_deployment" "cluster" {
 resource "aws_api_gateway_stage" "cluster" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
-  rest_api_id   = aws_apigatewayv2_api.cluster[0].id
+  rest_api_id   = aws_api_gateway_rest_api.cluster[0].id
   stage_name    = "$default"
   deployment_id = aws_api_gateway_deployment.cluster[0].id
 

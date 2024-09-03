@@ -117,10 +117,6 @@ resource "aws_api_gateway_resource" "api_resource-{{lambda-name}}" {
   rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
   parent_id   = data.terraform_remote_state.cluster[0].outputs.api_gateway.root_resource_id
   path_part   = "${var.lambda_name}"
-
-  tags = merge(local.lambda_tags, {
-    Name = "bbotiscaf.${local.lambda_tags.cluster}.api_resource.${var.lambda_name}"
-  })
 }
 
 resource "aws_api_gateway_method" "api_method-{{lambda-name}}" {
