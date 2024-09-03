@@ -247,7 +247,7 @@ resource "aws_api_gateway_method" "ping" {
 resource "aws_api_gateway_integration" "ping" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
-  rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+  rest_api_id = aws_api_gateway_rest_api.cluster[0].id
   resource_id = aws_api_gateway_resource.ping[0].id
   http_method = aws_api_gateway_method.ping[0].http_method
 
