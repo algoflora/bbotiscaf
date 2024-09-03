@@ -29,7 +29,13 @@
               {:method method
                :data data
                :response resp})
-    (:body resp)))
+    (if (-> resp :body :ok)
+      (-> resp :body :result)
+      (log/warn ::bad-telegram-api-response
+                "Telegram API response is not OK! %s" resp
+                {:method method
+                 :data data
+                 :response resp}))))
 
 
 (defn api-wrap
