@@ -36,7 +36,9 @@
   "Builds layer for dependencies"
   [{:keys [deps-path target-dir work-dir datalevin-version] :as opts}]
   (let [deps-zipfile (lib/deps-zipfile opts)]
-    (if (empty? (fs/modified-since deps-zipfile deps-path))
+    (if (and (empty? (fs/modified-since deps-zipfile deps-path))
+             (not (and (coll? *command-line-args*)
+                       (some #{"--rebuild-deps"} *command-line-args*))))
       (println (format "\nNot rebuilding dependencies layer: no changes to %s since %s was last built"
                        (str deps-path) (str deps-zipfile)))
       (do
