@@ -35,10 +35,11 @@
 (defn build-deps-layer
   "Builds layer for dependencies"
   [{:keys [deps-path target-dir work-dir datalevin-version] :as opts}]
-  (let [deps-zipfile (lib/deps-zipfile opts)]
+  (let [deps-zipfile (lib/deps-zipfile opts)
+        rebuild-deps? (and (coll? *command-line-args*)
+                           (some #{"--rebuild-deps"} *command-line-args*))]
     (if (and (empty? (fs/modified-since deps-zipfile deps-path))
-             (not (and (coll? *command-line-args*)
-                       (some #{"--rebuild-deps"} *command-line-args*))))
+             (not rebuild-deps?))
       (println (format "\nNot rebuilding dependencies layer: no changes to %s since %s was last built"
                        (str deps-path) (str deps-zipfile)))
       (do
@@ -55,6 +56,8 @@
             (println (format "\nNot building dependencies layer: no deps or pods listed in %s"
                              (str deps-path)))
             (do
+              (when rebuild-deps?
+                (fs/delete-tree (fs/file work-dir m2-dir)))
               (spit (fs/file work-dir "deps.edn")
                     {:deps (or deps {})
                      :pods (or pods {})
