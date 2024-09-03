@@ -48,3 +48,10 @@
 (defn remove-nils
   [in-map]
   (postwalk (fn [item] (if (map? item) (into {} (filter #(-> % val some?) item)) item)) in-map))
+
+
+(defmacro do-nanos
+  [& body]
+  `(let [t0 (system-time)]
+     ~@body
+     (- (system-time) t0)))

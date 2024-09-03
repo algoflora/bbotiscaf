@@ -44,7 +44,7 @@
     (handle-action req)))
 
 
-(m/=> log-and-handle [:-> spec.aws/SQSRecordSchema nil])
+(m/=> log-and-handle [:-> spec.aws/SQSRecordSchema :nil])
 
 
 (defn- log-and-handle
