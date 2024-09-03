@@ -76,5 +76,4 @@
               {:records-count (count rs)
                :records rs
                :context context})
-    (for [r rs]
-      (-> r log-and-prepare handler))))
+    (dorun (map #(-> % log-and-prepare handler) rs))))
