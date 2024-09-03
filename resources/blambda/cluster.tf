@@ -311,6 +311,8 @@ resource "aws_api_gateway_stage" "cluster" {
     })
   }
 
+  depends_on = [aws_api_gateway_account.cluster]
+
   tags = merge(var.cluster_tags, {
     Name = "bbotiscaf.${var.cluster_tags.cluster}.apigw.stage"
   })
