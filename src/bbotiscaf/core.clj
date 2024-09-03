@@ -76,5 +76,5 @@
               {:records-count (count rs)
                :records rs
                :context context})
-    (doseq [r rs]
+    (for [r rs]
       (-> r log-and-prepare handler))))
