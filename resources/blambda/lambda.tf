@@ -129,6 +129,16 @@ resource "aws_api_gateway_method" "api_method-{{lambda-name}}" {
   authorization = "NONE"
 }
 
+# API Gateway Lambda Method Response
+resource "aws_api_gateway_method_response" "api_method-{{lambda-name}}" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+  resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
+  http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
+  status_code = 200
+}
+
 # API Gateway Integration for the SQS Queue
 resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
