@@ -283,9 +283,18 @@ resource "aws_api_gateway_integration_response" "ping" {
   status_code = 200
 
   response_templates = {
-    "application/json" = "pong"
+    "application/json" = <<TEMPLATE
+{
+    "ok" : true,
+    "ip" : "$context.identity.sourceIp",
+    "userAgent" : "$context.identity.userAgent",
+    "time" : "$context.requestTime",
+    "epochTime" : "$context.requestTimeEpoch"
+}
+TEMPLATE
   }
 }
+
 
 # API Gateway Deployment
 resource "aws_api_gateway_deployment" "cluster" {
