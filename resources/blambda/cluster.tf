@@ -537,7 +537,7 @@ output "api_gateway" {
 }
 
 output "api_gateway_endpoint" {
-  value = try(aws_api_gateway_deployment[0].invoke_url, null)
+  value = try(aws_api_gateway_deployment.cluster[0].invoke_url, null)
 }
 
 output "api_gateway_sqs_role_arn" {
@@ -546,10 +546,6 @@ output "api_gateway_sqs_role_arn" {
 
 output "dlq_arn" {
   value = try(aws_sqs_queue.dlq[0].arn, null)
-}
-
-output "aws_subnet_public" {
-  value = try(aws_subnet.public[*], null)
 }
 
 output "aws_subnet_private" {
