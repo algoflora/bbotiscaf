@@ -191,8 +191,7 @@ resource "aws_api_gateway_integration_response" "sqs_integration-{{lambda-name}}
   rest_api_id = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].rest_api_id
   resource_id = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].resource_id
   http_method = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].http_method
-
-  # status_code = 200
+  status_code = 200
 
   response_templates = {"application/json" = "$input"}
 }
