@@ -154,19 +154,7 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   passthrough_behavior = "NEVER"
 
   request_templates = {
-    "application/json" = <<EOF
-#set($root = $input.body('$'))
-{
-  "QueueUrl": ${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].url},
-  "MessageBody": $input.body,
-  "MessageGroupId": 
-#if($root.message != null && $root.message.from != null)$root.message.from.id
-#elseif($root.callback_query != null && $root.callback_query.from != null)$root.callback_query.from.id
-#elseif($root.action != null)"action"
-#else"unknown"
-#end
-}
-    EOF
+    "application/json" = file("${path.module}/request.vtl")
   }
 
   uri = "arn:aws:apigateway:${var.region}:sqs:action/SendMessage"
@@ -299,8 +287,9 @@ resource "aws_iam_role_policy_attachment" "lambda_efs-{{lambda-name}}" {
 output "webhook_url" {
   value = try(
     format(
-      "%s/%s",
+      "%s/%s/%s",
       trimsuffix("${data.terraform_remote_state.cluster[0].outputs.api_gateway_endpoint}", "/"),
+      var.cluster_tags.cluster,
       trimprefix("${aws_api_gateway_resource.api_resource-{{lambda-name}}[0].path}", "/")),
     null)
 }
