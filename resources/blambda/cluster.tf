@@ -252,6 +252,14 @@ resource "aws_api_gateway_integration" "ping" {
   http_method = aws_api_gateway_method.ping[0].http_method
 
   type = "MOCK"
+
+  request_templates = {
+    "application/json" = <<TEMPLATE
+{
+  "statusCode": 200
+}
+TEMPLATE
+  }
 }
 
 # Ping API Gateway Integration Response
@@ -262,6 +270,10 @@ resource "aws_api_gateway_method_response" "ping" {
   resource_id = aws_api_gateway_resource.ping[0].id
   http_method = aws_api_gateway_method.ping[0].http_method
   status_code = 200
+
+  request_templates = {
+    "application/json" = "pong"
+  }
 }
 
 # API Gateway Deployment
