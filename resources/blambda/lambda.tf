@@ -138,6 +138,7 @@ resource "aws_api_gateway_method_response" "api_method-{{lambda-name}}" {
   http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
 
   status_code = 200
+  response_templates = {"application/json" = "$input"}
 }
 
 # API Gateway Lambda Integration
@@ -155,7 +156,6 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   passthrough_behavior = "NEVER"
 
   request_templates = {
-    # "application/json" = file("${path.root}/request.vtl")
     "application/json" = <<VTL
 {
   "QueueUrl": "${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].url}",
