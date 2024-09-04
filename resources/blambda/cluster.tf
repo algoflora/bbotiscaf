@@ -318,7 +318,7 @@ resource "aws_api_gateway_stage" "cluster" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
   rest_api_id   = aws_api_gateway_rest_api.cluster[0].id
-  stage_name    = "default"
+  stage_name    = "${var.cluster_tags.cluster}"
   deployment_id = aws_api_gateway_deployment.cluster[0].id
 
   access_log_settings {

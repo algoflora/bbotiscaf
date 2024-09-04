@@ -145,10 +145,10 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   request_templates = {
     "application/json" = <<EOF
     Action=SendMessage&MessageBody=$input.body&MessageGroupId=
-#set($root = $input.body('$'))
+#set($root = $input.json('$'))
 #if($root.message != null && $root.message.from != null)"from-id-"+$root.message.from.id
 #elseif($root.callback_query != null && $root.callback_query.from != null)"from-id-"+$root.callback_query.from.id
-#elseif($root.action)"action"
+#elseif($root.action != null)"action"
 #else"unknown"
 #end
     EOF
