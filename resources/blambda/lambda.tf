@@ -137,10 +137,9 @@ resource "aws_api_gateway_method_response" "api_method-{{lambda-name}}" {
   resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
   http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
 
-  status_code = 200
+  status_code = 202
   response_parameters = {
     "method.response.header.Content-Type" = true
-    "method.response.body" = true
   }
 }
 
