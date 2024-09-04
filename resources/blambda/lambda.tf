@@ -110,7 +110,7 @@ resource "aws_sqs_queue" "lambda_queue-{{lambda-name}}" {
   })
 }
 
-# API Gateway Resource
+# API Gateway Lambda Resource
 resource "aws_api_gateway_resource" "api_resource-{{lambda-name}}" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
 
@@ -119,6 +119,7 @@ resource "aws_api_gateway_resource" "api_resource-{{lambda-name}}" {
   path_part   = "${var.lambda_name}"
 }
 
+# API Gateway Lambda Method
 resource "aws_api_gateway_method" "api_method-{{lambda-name}}" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
   
@@ -143,24 +144,22 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   passthrough_behavior = "NEVER"
 
   request_templates = {
-    "application/json" = "Action=SendMessage&MessageBody=$input.body&MessageGroupId=1"
+    "application/json" = <<EOF
+#set($root = $input.body('$'))
+{
+  "QueueUrl": ${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].url},
+  "MessageBody": $input.body,
+  "MessageGroupId": 
+#if($root.message != null && $root.message.from != null)$root.message.from.id
+#elseif($root.callback_query != null && $root.callback_query.from != null)$root.callback_query.from.id
+#elseif($root.action != null)"action"
+#else"unknown"
+#end
+}
+    EOF
   }
 
-#   request_templates = {
-#     "application/json" = <<EOF
-#     Action=SendMessage&MessageBody=$input.body&MessageGroupId=
-# #set($root = $input.body('$'))
-# #set($action = 'action')
-# #set($unknown = 'unknown')
-# #if($root.message != null && $root.message.from != null)$root.message.from.id
-# #elseif($root.callback_query != null && $root.callback_query.from != null)$root.callback_query.from.id
-# #elseif($root.action != null)$action
-# #else$unknown
-# #end
-#     EOF
-#   }
-
-  uri = "arn:aws:apigateway:${var.region}:sqs:path/${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].name}"
+  uri = "arn:aws:apigateway:${var.region}:sqs:action/SendMessage"
 
   timeout_milliseconds   = 29000
 }
