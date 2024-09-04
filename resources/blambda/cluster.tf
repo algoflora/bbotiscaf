@@ -271,7 +271,7 @@ resource "aws_api_gateway_method_response" "ping" {
   http_method = aws_api_gateway_method.ping[0].http_method
   status_code = 200
 
-  request_templates = {
+  response_templates = {
     "application/json" = "pong"
   }
 }
