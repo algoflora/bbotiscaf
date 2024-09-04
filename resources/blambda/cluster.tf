@@ -536,6 +536,10 @@ output "api_gateway" {
   value = try(aws_api_gateway_rest_api.cluster[0], null)
 }
 
+output "api_gateway_endpoint" {
+  value = try(aws_api_gateway_deployment[0].invoke_url, null)
+}
+
 output "api_gateway_sqs_role_arn" {
   value = try(aws_iam_role.api_gateway_sqs[0].arn, null)
 }
