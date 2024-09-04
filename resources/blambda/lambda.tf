@@ -192,9 +192,9 @@ resource "aws_api_gateway_integration_response" "sqs_integration-{{lambda-name}}
   resource_id = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].resource_id
   http_method = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].http_method
 
-  status_code = 200
+  # status_code = 200
 
-  response_templates = {"application/json" = "{\"ok\": true}"}
+  response_templates = {"application/json" = "$input"}
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_trigger-{{lambda-name}}" {
