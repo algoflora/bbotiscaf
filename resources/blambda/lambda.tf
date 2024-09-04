@@ -131,7 +131,7 @@ resource "aws_api_gateway_method" "api_method-{{lambda-name}}" {
 
 # API Gateway Lambda Method Response
 resource "aws_api_gateway_method_response" "api_method-{{lambda-name}}" {
-  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
 
   rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
   resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
