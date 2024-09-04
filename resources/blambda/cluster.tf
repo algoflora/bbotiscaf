@@ -273,7 +273,9 @@ TEMPLATE
 }
 
 # Ping API Gateway Integration Response
-resource aws_api_gateway_integration_response my_ip {
+resource "aws_api_gateway_integration_response" "ping" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
   rest_api_id = aws_api_gateway_integration.ping[0].rest_api_id
   resource_id = aws_api_gateway_integration.ping[0].resource_id
   http_method = aws_api_gateway_integration.ping[0].http_method
