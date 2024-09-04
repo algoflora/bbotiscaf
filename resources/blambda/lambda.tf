@@ -136,6 +136,7 @@ resource "aws_api_gateway_method_response" "api_method-{{lambda-name}}" {
   rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
   resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
   http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
+
   status_code = 200
 }
 
@@ -192,6 +193,8 @@ resource "aws_api_gateway_integration_response" "sqs_integration-{{lambda-name}}
   http_method = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].http_method
 
   status_code = 200
+
+  response_templates = {"application/json" = "{\"ok\": true}"}
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_trigger-{{lambda-name}}" {
