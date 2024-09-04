@@ -139,8 +139,8 @@ resource "aws_api_gateway_method_response" "api_method-{{lambda-name}}" {
 
   status_code = 200
   response_parameters = {
-    "method.response.header.Content-Type" = "'application/json'"
-    "method.response.body" = "integration.response.body"
+    "method.response.header.Content-Type" = true
+    "method.response.body" = true
   }
 }
 
