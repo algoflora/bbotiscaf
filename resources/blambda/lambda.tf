@@ -138,7 +138,10 @@ resource "aws_api_gateway_method_response" "api_method-{{lambda-name}}" {
   http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
 
   status_code = 200
-  response_templates = {"application/json" = "$input"}
+  response_parameters = {
+    "method.response.header.Content-Type" = "'application/json'"
+    "method.response.body" = "integration.response.body"
+  }
 }
 
 # API Gateway Lambda Integration
