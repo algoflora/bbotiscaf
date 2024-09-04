@@ -274,9 +274,9 @@ TEMPLATE
 
 # Ping API Gateway Integration Response
 resource aws_api_gateway_integration_response my_ip {
-  rest_api_id = aws_api_gateway_integration.ping.rest_api_id
-  resource_id = aws_api_gateway_integration.ping.resource_id
-  http_method = aws_api_gateway_integration.ping.http_method
+  rest_api_id = aws_api_gateway_integration.ping[0].rest_api_id
+  resource_id = aws_api_gateway_integration.ping[0].resource_id
+  http_method = aws_api_gateway_integration.ping[0].http_method
 
   status_code = 200
 
