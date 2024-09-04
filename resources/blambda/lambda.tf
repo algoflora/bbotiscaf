@@ -154,7 +154,14 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   passthrough_behavior = "NEVER"
 
   request_templates = {
-    "application/json" = file("${path.root}/request.vtl")
+    # "application/json" = file("${path.root}/request.vtl")
+    "application/json" = <<VTL
+{
+  "QueueUrl": ${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].url},
+  "MessageBody": $input.body,
+  "MessageGroupId": "ID"
+}
+VTL
   }
 
   uri = "arn:aws:apigateway:${var.region}:sqs:action/SendMessage"
