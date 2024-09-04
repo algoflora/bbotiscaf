@@ -139,7 +139,7 @@ resource "aws_api_gateway_method_response" "api_method-{{lambda-name}}" {
   status_code = 200
 }
 
-# API Gateway Integration for the SQS Queue
+# API Gateway Lambda Integration
 resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
 
@@ -160,6 +160,20 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   "QueueUrl": "${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].url}",
   "MessageBody": "$input.body",
   "MessageGroupId": "ID"
+
+#*
+#set($root = $input.body('$'))
+{
+  "QueueUrl": "${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].url}",
+  "MessageBody": "$input.body",
+  "MessageGroupId":
+#if($root.message != null && $root.message.from != null)$root.message.from.id
+#elseif($root.callback_query != null && $root.callback_query.from != null)$root.callback_query.from.id
+#elseif($root.action != null)"action"
+#else"unknown"
+#end
+}
+*#
 }
 VTL
   }
@@ -167,6 +181,17 @@ VTL
   uri = "arn:aws:apigateway:${var.region}:sqs:action/SendMessage"
 
   timeout_milliseconds   = 29000
+}
+
+# API Gateway Lambda Integration Response
+resource "aws_api_gateway_integration_response" "sqs_integration-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  rest_api_id = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].rest_api_id
+  resource_id = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].resource_id
+  http_method = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].http_method
+
+  status_code = 200
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_trigger-{{lambda-name}}" {
