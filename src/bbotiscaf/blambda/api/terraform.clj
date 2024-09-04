@@ -84,7 +84,7 @@
                                :val v})))]
     (fs/create-dirs target-dir)
     (fs/create-dirs module-dir)
-    (doseq [filename ["cluster.tf" "lambda.tf" "request.vtl"]
+    (doseq [filename ["cluster.tf" "lambda.tf"]
             :let [target (fs/file target-dir filename)
                   content (selmer/render (slurp (io/resource (str "blambda/" filename)))
                                          (assoc opts :lambda-env-vars env-vars))]]
