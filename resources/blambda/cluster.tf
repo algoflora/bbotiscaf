@@ -243,6 +243,16 @@ resource "aws_api_gateway_method" "ping" {
   rest_api_id   = aws_api_gateway_rest_api.cluster[0].id
 }
 
+# Ping API Gateway Method Response
+resource "aws_api_gateway_method_response" "ping" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.cluster[0].id
+  resource_id = aws_api_gateway_resource.ping[0].id
+  http_method = aws_api_gateway_method.ping[0].http_method
+  status_code = 200
+}
+
 # Ping API Gateway Integration
 resource "aws_api_gateway_integration" "ping" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
@@ -263,12 +273,11 @@ TEMPLATE
 }
 
 # Ping API Gateway Integration Response
-resource "aws_api_gateway_method_response" "ping" {
-  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+resource aws_api_gateway_integration_response my_ip {
+  rest_api_id = aws_api_gateway_integration.ping.rest_api_id
+  resource_id = aws_api_gateway_integration.ping.resource_id
+  http_method = aws_api_gateway_integration.ping.http_method
 
-  rest_api_id = aws_api_gateway_rest_api.cluster[0].id
-  resource_id = aws_api_gateway_resource.ping[0].id
-  http_method = aws_api_gateway_method.ping[0].http_method
   status_code = 200
 
   response_templates = {
