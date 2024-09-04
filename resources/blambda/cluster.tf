@@ -377,29 +377,25 @@ resource "aws_iam_role_policy" "api_gateway_cloudwatch" {
           "logs:FilterLogEvents"
         ]
         Resource = "${aws_cloudwatch_log_group.api_gateway[0].arn}:*"
-      },
-      {
-        "Effect": "Allow",
-        "Action": [
-          "account:*"
-        ],
-        "Resource": "arn:aws:account:*::/*"
-      },
-      {
-        "Effect": "Allow",
-        "Action": [
-          "apigateway:*"
-        ],
-        "Resource": "arn:aws:apigateway:*::/*"
       }
     ]
   })
+}
+
+# Attachment of API Gateway Push to CloudWatch for API Gateway Role
+resource "aws_iam_role_policy_attachment" "api_gateway_cloudwatch" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  role       = aws_iam_role.api_gateway_cloudwatch[0].name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
 }
 
 # API Gateway Account
 resource "aws_api_gateway_account" "cluster" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
+  depends_on = [aws_iam_role_policy_attachment.api_gateway_cloudwatch]
+  
   cloudwatch_role_arn = aws_iam_role.api_gateway_cloudwatch[0].arn
 }
 
