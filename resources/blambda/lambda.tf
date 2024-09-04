@@ -157,7 +157,7 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
     # "application/json" = file("${path.root}/request.vtl")
     "application/json" = <<VTL
 {
-  "QueueUrl": ${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].url},
+  "QueueUrl": "${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].url}",
   "MessageBody": $input.body,
   "MessageGroupId": "ID"
 }
