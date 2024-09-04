@@ -282,5 +282,10 @@ resource "aws_iam_role_policy_attachment" "lambda_efs-{{lambda-name}}" {
 
 # Output API Endpoint (Webhook) 
 output "webhook_url" {
-  value = try("${data.terraform_remote_state.cluster[0].outputs.api_gateway_endpoint}/${aws_api_gateway_resource.api_resource-{{lambda-name}}[0].path}", null)
+  value = try(
+    format(
+      "%s/%s",
+      trimsuffix("${data.terraform_remote_state.cluster[0].outputs.api_gateway_endpoint}", "/"),
+      trimprefix("${aws_api_gateway_resource.api_resource-{{lambda-name}}[0].path}", "/")),
+    null)
 }
