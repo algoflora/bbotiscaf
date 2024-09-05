@@ -32,10 +32,10 @@
       (nil? arg2)
       (process-vargs (apply conj [arg1 ""] (drop 2 vargs)))
 
-      (= cnt (+ 2 (count (re-seq #"(?<!%)%[sdfx]" arg2))))
+      (= cnt (+ 2 (count (re-seq #"(?<!%)%(\.\d+)?[sdfx]" arg2))))
       (process-vargs (conj vargs {}))
 
-      (and (= cnt (+ 3 (count (re-seq #"(?<!%)%(\d*\.\d*)?[sdfx]" arg2))))
+      (and (= cnt (+ 3 (count (re-seq #"(?<!%)%(\.\d+)?[sdfx]" arg2))))
            (map? argn))
       (merge {:event-name arg1
               :message-text (apply format (rest vargs))}
