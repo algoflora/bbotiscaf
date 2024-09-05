@@ -283,7 +283,7 @@ resource "aws_api_gateway_integration_response" "ping" {
   status_code = 200
 
   response_templates = {
-    "application/json" = <<TEMPLATE
+    "application/json" = <<VTL
 {
     "ok" : true,
     "ip" : "$context.identity.sourceIp",
@@ -291,7 +291,7 @@ resource "aws_api_gateway_integration_response" "ping" {
     "time" : "$context.requestTime",
     "epochTime" : "$context.requestTimeEpoch"
 }
-TEMPLATE
+VTL
   }
 }
 
@@ -563,6 +563,43 @@ resource "aws_security_group_rule" "lambda_to_efs" {
   source_security_group_id = aws_security_group.efs[0].id
 }
 
+resource "aws_iam_user" "api_deployer" {
+  name = "bbotiscaf-${var.cluster_tags.cluster}-api-deployer"
+}
+
+resource "aws_iam_access_key" "api_deployer" {
+  user = aws_iam_user.api_deployer.name
+}
+
+resource "aws_iam_user_policy" "api_deployer" {
+  name = "api_gateway_deploy"
+  user = aws_iam_user.api_deployer.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "apigateway:POST",
+          "apigateway:GET",
+          "apigateway:PUT"
+        ]
+        Effect   = "Allow"
+        Resource = "arn:aws:apigateway:${var.region}::/restapis/${aws_api_gateway_rest_api.cluster[0].id}/deployments"
+      },
+    ]
+  })
+}
+
+output "api_deployer_access_key" {
+  value     = try(aws_iam_access_key.api_deployer.id, null)
+  sensitive = true
+}
+
+output "api_deployer_secret_key" {
+  value     = try(aws_iam_access_key.api_deployer.secret, null)
+  sensitive = true
+}
 
 output "api_gateway" {
   value = try(aws_api_gateway_rest_api.cluster[0], null)

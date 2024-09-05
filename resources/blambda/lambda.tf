@@ -161,20 +161,6 @@ resource "aws_api_gateway_method" "api_method-{{lambda-name}}" {
   authorization = "NONE"
 }
 
-# API Gateway Lambda Method Response
-# resource "aws_api_gateway_method_response" "api_method-{{lambda-name}}" {
-#   count = terraform.workspace == var.lambda_workspace ? 1 : 0
-
-#   rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
-#   resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
-#   http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
-
-#   status_code = 200
-#   response_parameters = {
-#     "method.response.header.Content-Type" = true
-#   }
-# }
-
 # API Gateway Lambda Integration
 resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
@@ -188,13 +174,6 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   credentials = data.terraform_remote_state.cluster[0].outputs.api_gateway_sqs_role_arn
 
   passthrough_behavior = "NEVER"
-
-
-#set($root = $input.body('$'))
-#set($action = 'action')
-#set($unknown = 'unknown')
-  
-  # "#if($root.message != null && $root.message.from != null)$root.message.from.id#elseif($root.callback_query != null && $root.callback_query.from != null)$root.callback_query.from.id#elseif($root.action != null)$action#else$unknown#end"
   
   request_templates = {
     "application/json" = <<VTL
@@ -220,7 +199,10 @@ VTL
     "integration.request.header.Content-Type" = "'application/json'"
   }
 
-  uri = "arn:aws:apigateway:${var.region}:sqs:path/${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].name}"
+  # https://sqs.ap-southeast-1.amazonaws.com/414250673812/bbotiscaf-development-sqs-em-bolsyn.fifo
+  uri = "${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].url}"
+
+  # uri = "arn:aws:apigateway:${var.region}:sqs:path/${data.aws_caller_identity.current.account_id}/${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].name}"
   
   timeout_milliseconds   = 29000
 }
@@ -233,8 +215,6 @@ resource "aws_api_gateway_integration_response" "sqs_integration-{{lambda-name}}
   resource_id = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].resource_id
   http_method = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].http_method
   status_code = 200
-
-  # response_templates = {"application/json" = "$input"}
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_trigger-{{lambda-name}}" {
@@ -356,6 +336,36 @@ resource "aws_iam_role_policy_attachment" "lambda_efs-{{lambda-name}}" {
  
   role       = aws_iam_role.lambda-{{lambda-name}}[0].name
   policy_arn = "arn:aws:iam::aws:policy/AmazonElasticFileSystemClientFullAccess"
+}
+
+resource "null_resource" "deploy_api" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  triggers = {
+    api_resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
+    api_method_id   = aws_api_gateway_method.api_method-{{lambda-name}}[0].id
+    api_integration_id = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].id
+  }
+
+  depends_on = [
+    aws_api_gateway_resource.api_resource-{{lambda-name}},
+    aws_api_gateway_method.api_method-{{lambda-name}},
+    aws_api_gateway_integration.sqs_integration-{{lambda-name}}
+  ]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      aws apigateway create-deployment \
+        --rest-api-id ${data.terraform_remote_state.cluster[0].outputs.api_gateway.id} \
+        --stage-name ${var.cluster_tags.cluster} \
+        --description "Deployment triggered by Terraform"
+    EOT
+    environment = {
+      AWS_ACCESS_KEY_ID     = data.terraform_remote_state.cluster[0].outputs.api_deployer_access_key
+      AWS_SECRET_ACCESS_KEY = data.terraform_remote_state.cluster[0].outputs.api_deployer_secret_key
+      AWS_DEFAULT_REGION    = var.region
+    }
+  }
 }
 
 # Output API Endpoint (Webhook) 
