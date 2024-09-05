@@ -176,38 +176,22 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
 
   integration_http_method = "POST"
-  type = "AWS"
-  credentials = data.terraform_remote_state.cluster[0].outputs.api_gateway_sqs_role_arn
+  type                    = "AWS"
+  credentials             = data.terraform_remote_state.cluster[0].outputs.api_gateway_sqs_role_arn
+  uri                     = "arn:aws:apigateway:${var.region}:sqs:path/${data.aws_caller_identity.current.account_id}/${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].name}"
 
-  passthrough_behavior = "NEVER"
-  
   request_templates = {
-    "application/json" = <<VTL
-#set($root = $util.parseJson($input.body))
-{
-  "Action": "SendMessage",
-  "MessageBody": "$util.escapeJavaScript($input.body)",
-  "MessageGroupId": 
-    #if($!root.message.from.id != "")
-      "$root.message.from.id"
-    #elseif($!root.callback_query.from.id != "")
-      "$root.callback_query.from.id"
-    #elseif($!root.action != "")
-      "action"
-    #else
-      "unknown"
-    #end
-}
-VTL
+    "application/json" = <<EOF
+Action=SendMessage&MessageBody=$util.urlEncode($input.body)&MessageGroupId=#if($!input.path('$.message.from.id') != "")$input.path('$.message.from.id')#elseif($!input.path('$.callback_query.from.id') != "")$input.path('$.callback_query.from.id')#elseif($!input.path('$.action') != "")action#else unknown#end
+EOF
   }
 
   request_parameters = {
-    "integration.request.header.Content-Type" = "'application/json'"
+    "integration.request.header.Content-Type" = "'application/x-www-form-urlencoded'"
   }
 
-  uri = "arn:aws:apigateway:${var.region}:sqs:path/${data.aws_caller_identity.current.account_id}/${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].name}"
-  
-  timeout_milliseconds   = 29000
+  passthrough_behavior = "NEVER"
+  timeout_milliseconds = 29000
 }
 
 # API Gateway Lambda Integration Response
@@ -345,9 +329,7 @@ resource "null_resource" "deploy_api-{{lambda-name}}" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
 
   triggers = {
-    api_resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
-    api_method_id   = aws_api_gateway_method.api_method-{{lambda-name}}[0].id
-    api_integration_id = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].id
+    timestamp = timestamp()
   }
 
   depends_on = [

@@ -1,10 +1,15 @@
 (ns bbotiscaf.dynamic
   (:require
-    [babashka.pods :refer [load-pod]]))
+    [babashka.pods :refer [load-pod]]
+    [bbotiscaf.logging]
+    [bbotiscaf.misc :refer [do-nanos]]
+    [taoensso.timbre :as log]))
 
 
-(let [time-str (with-out-str (time (load-pod 'huahaiy/datalevin "0.9.10")))]
-  (println "Datalevin Pod loaded. " time-str))
+(let [time-millis (/ (do-nanos (load-pod 'huahaiy/datalevin "0.9.10")) 0.000001)]
+  (log/info ::datalevin-pod-loaded
+            "Datalevin Pod loaded in %s msec" time-millis
+            {:time-millis time-millis}))
 
 
 (require '[pod.huahaiy.datalevin :refer [db]])
