@@ -564,16 +564,22 @@ resource "aws_security_group_rule" "lambda_to_efs" {
 }
 
 resource "aws_iam_user" "api_deployer" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
   name = "bbotiscaf-${var.cluster_tags.cluster}-api-deployer"
 }
 
 resource "aws_iam_access_key" "api_deployer" {
-  user = aws_iam_user.api_deployer.name
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  user = aws_iam_user.api_deployer[0].name
 }
 
 resource "aws_iam_user_policy" "api_deployer" {
-  name = "api_gateway_deploy"
-  user = aws_iam_user.api_deployer.name
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  name = "api_gateway_deploy-${var.cluster_tags.cluster}-policy"
+  user = aws_iam_user.api_deployer[0].name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -592,12 +598,12 @@ resource "aws_iam_user_policy" "api_deployer" {
 }
 
 output "api_deployer_access_key" {
-  value     = try(aws_iam_access_key.api_deployer.id, null)
+  value     = try(aws_iam_access_key.api_deployer[0].id, null)
   sensitive = true
 }
 
 output "api_deployer_secret_key" {
-  value     = try(aws_iam_access_key.api_deployer.secret, null)
+  value     = try(aws_iam_access_key.api_deployer[0].secret, null)
   sensitive = true
 }
 

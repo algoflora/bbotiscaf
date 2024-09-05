@@ -127,10 +127,16 @@ data "aws_iam_policy_document" "sqs_policy_document-{{lambda-name}}" {
     resources = [aws_sqs_queue.lambda_queue-{{lambda-name}}[0].arn]
 
     condition {
-      test     = "ArnEquals"
+      test     = "ArnLike"
       variable = "aws:SourceArn"
-      values   = [data.terraform_remote_state.cluster[0].outputs.api_gateway.arn]
-    }
+      values   = ["arn:aws:execute-api:${var.region}:${data.aws_caller_identity.current.account_id}:${data.terraform_remote_state.cluster[0].outputs.api_gateway.id}/*/${aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method}${aws_api_gateway_resource.api_resource-{{lambda-name}}[0].path}"]
+}
+
+    # condition {
+    #   test     = "ArnEquals"
+    #   variable = "aws:SourceArn"
+    #   values   = [data.terraform_remote_state.cluster[0].outputs.api_gateway.arn]
+    # }
   }
 }
 
@@ -199,10 +205,7 @@ VTL
     "integration.request.header.Content-Type" = "'application/json'"
   }
 
-  # https://sqs.ap-southeast-1.amazonaws.com/414250673812/bbotiscaf-development-sqs-em-bolsyn.fifo
-  uri = "${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].url}"
-
-  # uri = "arn:aws:apigateway:${var.region}:sqs:path/${data.aws_caller_identity.current.account_id}/${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].name}"
+  uri = "arn:aws:apigateway:${var.region}:sqs:path/${data.aws_caller_identity.current.account_id}/${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].name}"
   
   timeout_milliseconds   = 29000
 }
@@ -338,7 +341,7 @@ resource "aws_iam_role_policy_attachment" "lambda_efs-{{lambda-name}}" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonElasticFileSystemClientFullAccess"
 }
 
-resource "null_resource" "deploy_api" {
+resource "null_resource" "deploy_api-{{lambda-name}}" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
 
   triggers = {
