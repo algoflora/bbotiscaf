@@ -110,6 +110,38 @@ resource "aws_sqs_queue" "lambda_queue-{{lambda-name}}" {
   })
 }
 
+# SQS Queue Access Policy Document
+data "aws_iam_policy_document" "sqs_policy_document-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  statement {
+    sid    = "First"
+    effect = "Allow"
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.lambda_queue-{{lambda-name}}[0].arn]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = [data.terraform_remote_state.cluster[0].outputs.api_gateway.arn]
+    }
+  }
+}
+
+# SQS Queue Access Policy
+resource "aws_sqs_queue_policy" "sqs_policy-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  queue_url = aws_sqs_queue.lambda_queue-{{lambda-name}}[0].id
+  policy    = data.aws_iam_policy_document.sqs_policy_document-{{lambda-name}}[0].json
+}
+
 # API Gateway Lambda Resource
 resource "aws_api_gateway_resource" "api_resource-{{lambda-name}}" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
@@ -130,18 +162,18 @@ resource "aws_api_gateway_method" "api_method-{{lambda-name}}" {
 }
 
 # API Gateway Lambda Method Response
-resource "aws_api_gateway_method_response" "api_method-{{lambda-name}}" {
-  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+# resource "aws_api_gateway_method_response" "api_method-{{lambda-name}}" {
+#   count = terraform.workspace == var.lambda_workspace ? 1 : 0
 
-  rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
-  resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
-  http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
+#   rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+#   resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
+#   http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
 
-  status_code = 202
-  response_parameters = {
-    "method.response.header.Content-Type" = true
-  }
-}
+#   status_code = 200
+#   response_parameters = {
+#     "method.response.header.Content-Type" = true
+#   }
+# }
 
 # API Gateway Lambda Integration
 resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
@@ -157,32 +189,39 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
 
   passthrough_behavior = "NEVER"
 
+
+#set($root = $input.body('$'))
+#set($action = 'action')
+#set($unknown = 'unknown')
+  
+  # "#if($root.message != null && $root.message.from != null)$root.message.from.id#elseif($root.callback_query != null && $root.callback_query.from != null)$root.callback_query.from.id#elseif($root.action != null)$action#else$unknown#end"
+  
   request_templates = {
     "application/json" = <<VTL
+#set($root = $util.parseJson($input.body))
 {
-  "QueueUrl": "${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].url}",
-  "MessageBody": "$input.body",
-  "MessageGroupId": "ID"
-
-#*
-#set($root = $input.body('$'))
-{
-  "QueueUrl": "${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].url}",
-  "MessageBody": "$input.body",
-  "MessageGroupId":
-#if($root.message != null && $root.message.from != null)$root.message.from.id
-#elseif($root.callback_query != null && $root.callback_query.from != null)$root.callback_query.from.id
-#elseif($root.action != null)"action"
-#else"unknown"
-#end
-}
-*#
+  "Action": "SendMessage",
+  "MessageBody": "$util.escapeJavaScript($input.body)",
+  "MessageGroupId": 
+    #if($!root.message.from.id != "")
+      "$root.message.from.id"
+    #elseif($!root.callback_query.from.id != "")
+      "$root.callback_query.from.id"
+    #elseif($!root.action != "")
+      "action"
+    #else
+      "unknown"
+    #end
 }
 VTL
   }
 
-  uri = "arn:aws:apigateway:${var.region}:sqs:action/SendMessage"
+  request_parameters = {
+    "integration.request.header.Content-Type" = "'application/json'"
+  }
 
+  uri = "arn:aws:apigateway:${var.region}:sqs:path/${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].name}"
+  
   timeout_milliseconds   = 29000
 }
 
@@ -195,7 +234,7 @@ resource "aws_api_gateway_integration_response" "sqs_integration-{{lambda-name}}
   http_method = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].http_method
   status_code = 200
 
-  response_templates = {"application/json" = "$input"}
+  # response_templates = {"application/json" = "$input"}
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_trigger-{{lambda-name}}" {
