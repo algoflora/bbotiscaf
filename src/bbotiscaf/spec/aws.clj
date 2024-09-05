@@ -33,7 +33,8 @@
      [:MessageGroupId :string]
      [:SenderId :string]
      [:MessageDeduplicationId :string]
-     [:ApproximateFirstReceiveTimestamp :string]]]])
+     [:ApproximateFirstReceiveTimestamp :string]
+     [:AWSTraceHeader :string]]]])
 
 
 (def SQSRecordsBunch

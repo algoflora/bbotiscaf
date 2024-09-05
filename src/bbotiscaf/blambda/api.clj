@@ -34,7 +34,7 @@
 
 (defn build-deps-layer
   "Builds layer for dependencies"
-  [{:keys [deps-path target-dir work-dir datalevin-version] :as opts}]
+  [{:keys [deps-path target-dir work-dir] :as opts}]
   (let [deps-zipfile (lib/deps-zipfile opts)
         rebuild-deps? (and (coll? *command-line-args*)
                            (some #{"--rebuild-deps"} *command-line-args*))]

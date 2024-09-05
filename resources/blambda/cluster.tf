@@ -130,7 +130,7 @@ resource "aws_route_table_association" "public" {
 resource "aws_eip" "cluster" {
   count = terraform.workspace == var.cluster_workspace ? length(aws_subnet.public) : 0
 
-  vpc = true
+  domain = "vpc"
 }
 
 # NAT Gateway!
@@ -214,24 +214,112 @@ resource "aws_sqs_queue" "dlq" {
 }
 
 # API Gateway
-resource "aws_apigatewayv2_api" "cluster" {
+resource "aws_api_gateway_rest_api" "cluster" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
-  name          = "bbotiscaf.${var.cluster_tags.cluster}.apigw"
-  protocol_type = "HTTP"
+  name = "bbotiscaf.${var.cluster_tags.cluster}.apigw"
 
   tags = merge(var.cluster_tags, {
     Name = "bbotiscaf.${var.cluster_tags.cluster}.apigw"
   })
 }
 
-# API Gateway Stage
-resource "aws_apigatewayv2_stage" "cluster" {
+# Ping API Gateway Resource
+resource "aws_api_gateway_resource" "ping" {
   count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
-  api_id      = aws_apigatewayv2_api.cluster[0].id
-  name        = "$default"
-  auto_deploy = true
+  parent_id   = aws_api_gateway_rest_api.cluster[0].root_resource_id
+  path_part   = "ping"
+  rest_api_id = aws_api_gateway_rest_api.cluster[0].id
+}
+
+# Ping API Gateway Method
+resource "aws_api_gateway_method" "ping" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  authorization = "NONE"
+  http_method   = "GET"
+  resource_id   = aws_api_gateway_resource.ping[0].id
+  rest_api_id   = aws_api_gateway_rest_api.cluster[0].id
+}
+
+# Ping API Gateway Method Response
+resource "aws_api_gateway_method_response" "ping" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.cluster[0].id
+  resource_id = aws_api_gateway_resource.ping[0].id
+  http_method = aws_api_gateway_method.ping[0].http_method
+  status_code = 200
+}
+
+# Ping API Gateway Integration
+resource "aws_api_gateway_integration" "ping" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  rest_api_id = aws_api_gateway_rest_api.cluster[0].id
+  resource_id = aws_api_gateway_resource.ping[0].id
+  http_method = aws_api_gateway_method.ping[0].http_method
+
+  type = "MOCK"
+
+  request_templates = {
+    "application/json" = <<TEMPLATE
+{
+  "statusCode": 200
+}
+TEMPLATE
+  }
+}
+
+# Ping API Gateway Integration Response
+resource "aws_api_gateway_integration_response" "ping" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  rest_api_id = aws_api_gateway_integration.ping[0].rest_api_id
+  resource_id = aws_api_gateway_integration.ping[0].resource_id
+  http_method = aws_api_gateway_integration.ping[0].http_method
+
+  status_code = 200
+
+  response_templates = {
+    "application/json" = <<VTL
+{
+    "ok" : true,
+    "ip" : "$context.identity.sourceIp",
+    "userAgent" : "$context.identity.userAgent",
+    "time" : "$context.requestTime",
+    "epochTime" : "$context.requestTimeEpoch"
+}
+VTL
+  }
+}
+
+
+# API Gateway Deployment
+resource "aws_api_gateway_deployment" "cluster" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  depends_on = [aws_api_gateway_method.ping[0]]
+  
+  rest_api_id = aws_api_gateway_rest_api.cluster[0].id
+
+  triggers = {
+    redeployment = timestamp()
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# API Gateway Stage
+resource "aws_api_gateway_stage" "cluster" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  rest_api_id   = aws_api_gateway_rest_api.cluster[0].id
+  stage_name    = "${var.cluster_tags.cluster}"
+  deployment_id = aws_api_gateway_deployment.cluster[0].id
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway[0].arn
@@ -254,6 +342,8 @@ resource "aws_apigatewayv2_stage" "cluster" {
       integrationErrorMessage    = "$context.integrationErrorMessage"
     })
   }
+
+  depends_on = [aws_api_gateway_account.cluster]
 
   tags = merge(var.cluster_tags, {
     Name = "bbotiscaf.${var.cluster_tags.cluster}.apigw.stage"
@@ -323,6 +413,24 @@ resource "aws_iam_role_policy" "api_gateway_cloudwatch" {
     ]
   })
 }
+
+# Attachment of API Gateway Push to CloudWatch for API Gateway Role
+resource "aws_iam_role_policy_attachment" "api_gateway_cloudwatch" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  role       = aws_iam_role.api_gateway_cloudwatch[0].name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+}
+
+# API Gateway Account
+resource "aws_api_gateway_account" "cluster" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  depends_on = [aws_iam_role_policy_attachment.api_gateway_cloudwatch]
+  
+  cloudwatch_role_arn = aws_iam_role.api_gateway_cloudwatch[0].arn
+}
+
 
 # IAM Role for API Gateway to send Messages to SQS
 resource "aws_iam_role" "api_gateway_sqs" {
@@ -455,17 +563,56 @@ resource "aws_security_group_rule" "lambda_to_efs" {
   source_security_group_id = aws_security_group.efs[0].id
 }
 
+resource "aws_iam_user" "api_deployer" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
 
-output "api_gateway_id" {
-  value = try(aws_apigatewayv2_api.cluster[0].id, null)
+  name = "bbotiscaf-${var.cluster_tags.cluster}-api-deployer"
+}
+
+resource "aws_iam_access_key" "api_deployer" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  user = aws_iam_user.api_deployer[0].name
+}
+
+resource "aws_iam_user_policy" "api_deployer" {
+  count = terraform.workspace == var.cluster_workspace ? 1 : 0
+
+  name = "api_gateway_deploy-${var.cluster_tags.cluster}-policy"
+  user = aws_iam_user.api_deployer[0].name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "apigateway:POST",
+          "apigateway:GET",
+          "apigateway:PUT"
+        ]
+        Effect   = "Allow"
+        Resource = "arn:aws:apigateway:${var.region}::/restapis/${aws_api_gateway_rest_api.cluster[0].id}/deployments"
+      },
+    ]
+  })
+}
+
+output "api_deployer_access_key" {
+  value     = try(aws_iam_access_key.api_deployer[0].id, null)
+  sensitive = true
+}
+
+output "api_deployer_secret_key" {
+  value     = try(aws_iam_access_key.api_deployer[0].secret, null)
+  sensitive = true
+}
+
+output "api_gateway" {
+  value = try(aws_api_gateway_rest_api.cluster[0], null)
 }
 
 output "api_gateway_endpoint" {
-  value = try(aws_apigatewayv2_api.cluster[0].api_endpoint, null)
-}
-
-output "api_gateway_execution_arn" {
-  value = try(aws_apigatewayv2_api.cluster[0].execution_arn, null)
+  value = try(aws_api_gateway_deployment.cluster[0].invoke_url, null)
 }
 
 output "api_gateway_sqs_role_arn" {
@@ -474,10 +621,6 @@ output "api_gateway_sqs_role_arn" {
 
 output "dlq_arn" {
   value = try(aws_sqs_queue.dlq[0].arn, null)
-}
-
-output "aws_subnet_public" {
-  value = try(aws_subnet.public[*], null)
 }
 
 output "aws_subnet_private" {
