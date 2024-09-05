@@ -32,10 +32,10 @@
       (nil? arg2)
       (process-vargs (apply conj [arg1 ""] (drop 2 vargs)))
 
-      (= cnt (+ 2 (count (re-seq #"(?<!%)%[sdfx]" arg2))))
+      (= cnt (+ 2 (count (re-seq #"(?<!%)%(\.\d+)?[sdfx]" arg2))))
       (process-vargs (conj vargs {}))
 
-      (and (= cnt (+ 3 (count (re-seq #"(?<!%)%[sdfx]" arg2))))
+      (and (= cnt (+ 3 (count (re-seq #"(?<!%)%(\.\d+)?[sdfx]" arg2))))
            (map? argn))
       (merge {:event-name arg1
               :message-text (apply format (rest vargs))}
@@ -47,7 +47,7 @@
 (def lambda-stdout-appender
   {:enabled?   true
    :async?     false
-   :min-level  :info
+   :min-level  :debug
    :rate-limit nil
    :output-fn  :inherit
    :fn         (fn [{:keys [level ?err vargs ?ns-str
@@ -65,13 +65,6 @@
                                     (if ?err
                                       (str "\n" (with-out-str (st/print-stack-trace ?err)))
                                       "")))))})
-
-
-(def lambda-edn-appender
-  {:enabled? (= conf/profile :test)
-   :fn (fn [event]
-         (let [data (merge event (process-vargs (:vargs event)))]
-           (spit "logs.edn" (prn-str data) :append true)))})
 
 
 (defn- check-json
@@ -100,7 +93,6 @@
 
 (timbre/merge-config! {:min-level :debug
                        :appenders (merge {:println lambda-stdout-appender
-                                          ;; :edn lambda-edn-appender
                                           :json lambda-json-appender})})
 
 

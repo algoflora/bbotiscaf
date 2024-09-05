@@ -1,6 +1,5 @@
 (ns bbotiscaf.impl.system
   (:require
-    ;; [bbotiscaf.impl.api]
     [bbotiscaf.impl.config :as conf]
     [bbotiscaf.impl.e2e]
     [bbotiscaf.impl.system.app :as app]
@@ -10,8 +9,10 @@
     [integrant.core :as ig]
     [malli.core :as m]
     [malli.instrument :as mi]
-    [pod.huahaiy.datalevin :as d]
     [taoensso.timbre :as log]))
+
+
+(require '[pod.huahaiy.datalevin :as d])
 
 
 (defn- get-bbotiscaf-schema
@@ -36,7 +37,7 @@
         opts   {:validate-data? true
                 :closed-schema? true
                 :auto-entity-time? true}
-        cn-str (or conn-str (format "/tmp/bbotiscaf-test/%s" (str (java.util.UUID/randomUUID))) #_(str (fs/create-temp-dir {:prefix "bbotiscaf-test"})))]
+        cn-str (or conn-str (format "/tmp/bbotiscaf-test/%s" (str (java.util.UUID/randomUUID))))]
     (log/debug ::init-db-conn
                "Applying :db/conn %s..." cn-str
                {:conn-str cn-str

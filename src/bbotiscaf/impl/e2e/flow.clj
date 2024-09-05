@@ -13,8 +13,10 @@
      [clojure.test :refer [is testing]]
      [clojure.walk :refer [postwalk]]
      [malli.core :as m]
-     [pod.huahaiy.datalevin :as d]
      [taoensso.timbre :as log]))
+
+
+(require '[pod.huahaiy.datalevin :as d])
 
 
 (m/=> str?->re [:-> [:or :string Regexp] Regexp])

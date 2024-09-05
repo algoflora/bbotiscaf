@@ -10,7 +10,7 @@
 
 (defonce ^:private update-id (atom 0))
 
-(m/=> send-update [:-> spec.tg/Update-Data :any])
+(m/=> send-update [:-> spec.tg/UpdateData :any])
 
 
 (defn- send-update

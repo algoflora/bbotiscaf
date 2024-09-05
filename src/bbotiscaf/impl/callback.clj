@@ -2,21 +2,25 @@
   (:require
     [bbotiscaf.dynamic :refer [*dtlv* dtlv *user*]]
     [bbotiscaf.impl.system.app :as app]
-    [bbotiscaf.misc :refer [throw-error]]
+    [bbotiscaf.misc :refer [throw-error do-nanos]]
     [bbotiscaf.spec.model :as spec.mdl]
     [malli.core :as m]
-    [pod.huahaiy.datalevin :as d]
     [taoensso.timbre :as log]))
+
+
+(require '[pod.huahaiy.datalevin :as d])
 
 
 (def require-namespaces
   (delay
-    (let [namespaces @app/handler-namespaces]
-      (log/debug ::require-namespaces
-                 "Requering namespaces: %s" namespaces
-                 {:namespaces namespaces})
-      (time (doseq [ns (conj namespaces 'bbotiscaf.handler)]
-              (require ns))))))
+    (let [namespaces  @app/handler-namespaces
+          time-millis (* (do-nanos (doseq [ns (conj namespaces 'bbotiscaf.handler)]
+                                     (require ns)))
+                         0.000001)]
+      (log/info ::require-namespaces
+                "Required namespaces (%.3f msec): %s" time-millis (str namespaces)
+                {:namespaces namespaces
+                 :time-millis time-millis}))))
 
 
 (defn callbacks-count

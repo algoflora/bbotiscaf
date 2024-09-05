@@ -17,6 +17,29 @@
     [taoensso.timbre :as log]))
 
 
+(defn request
+  [method data]
+  (let [url  (format "https://api.telegram.org/bot%s/%s" @app/bot-token (name method))
+        raw  (http/post url {:headers {:content-type "application/json"}
+                             :body (generate-string data)})
+        resp (update raw :body #(try (parse-string % true)
+                                     (catch Throwable _ %)))]
+    (log/debug ::telegram-api-request
+               "Telegram API request was sent")
+    (log/info ::telegram-api-response
+              "Telegram api method %s reponse status %d" method (:status resp)
+              {:method method
+               :data data
+               :response resp})
+    (if (-> resp :body :ok)
+      (-> resp :body :result)
+      (log/warn ::bad-telegram-api-response
+                "Telegram API response is not OK! %s" resp
+                {:method method
+                 :data data
+                 :response resp}))))
+
+
 (defn api-wrap
   [method data]
   (let [api-fn @app/api-fn]
@@ -195,6 +218,9 @@
   (let [argm       (prepare-arguments-map {:text text :entities []} kbd optm user)
         new-msg    (send-message-to-chat argm (to-edit? optm user))
         new-msg-id (:message_id new-msg)]
+    (log/debug ::send-to-chat-message
+               "Send to chat message: %s %s %s %s" optm new-msg-id new-msg user
+               {})
     (when (and (not (:temp optm)) (not= new-msg-id (:msg-id user)))
       (u/set-msg-id user new-msg-id))
     (set-callbacks-message-id user new-msg)))
@@ -210,7 +236,7 @@
 (defn- download-file
   [file-path]
   (let [uri (format "https://api.telegram.org/file/bot%s/%s"
-                    (:bot/token @app/bot-token) file-path)
+                    @app/bot-token file-path)
         bis  (-> uri http/get deref :body)
         file (fs/file fs/temp-dir (java.util.UUID/randomUUID))
         fos  (java.io.FileOutputStream. file)]

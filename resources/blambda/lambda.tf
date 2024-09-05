@@ -9,6 +9,11 @@ variable "lambda_workspace" {
   default = "lambda-{{cluster}}-{{lambda-name}}"
 }
 
+variable "region" {
+  type = string
+  default = "ap-southeast-1"
+}
+
 data "terraform_remote_state" "cluster" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
   
@@ -64,7 +69,7 @@ resource "aws_lambda_function" "lambda-{{lambda-name}}" {
   }
 
   vpc_config {
-    subnet_ids         = data.terraform_remote_state.cluster[0].outputs.aws_subnet_public[*].id
+    subnet_ids         = data.terraform_remote_state.cluster[0].outputs.aws_subnet_private[*].id
     security_group_ids = [data.terraform_remote_state.cluster[0].outputs.aws_security_group_lambda_shared.id]
   }
 
@@ -105,31 +110,98 @@ resource "aws_sqs_queue" "lambda_queue-{{lambda-name}}" {
   })
 }
 
-# API Gateway Integration for the SQS Queue
-resource "aws_apigatewayv2_integration" "sqs_integration-{{lambda-name}}" {
+# SQS Queue Access Policy Document
+data "aws_iam_policy_document" "sqs_policy_document-{{lambda-name}}" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
 
-  api_id           = data.terraform_remote_state.cluster[0].outputs.api_gateway_id
-  integration_type = "AWS_PROXY"
-  integration_subtype = "SQS-SendMessage"
-  credentials_arn     = data.terraform_remote_state.cluster[0].outputs.api_gateway_sqs_role_arn
-  request_parameters  = {
-    QueueUrl    = aws_sqs_queue.lambda_queue-{{lambda-name}}[0].url
-    MessageBody = "$request.body"
-    MessageGroupId = var.lambda_name
-  }
-  
-  payload_format_version = "1.0"
-  timeout_milliseconds   = 29000
+  statement {
+    sid    = "First"
+    effect = "Allow"
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.lambda_queue-{{lambda-name}}[0].arn]
+
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = ["arn:aws:execute-api:${var.region}:${data.aws_caller_identity.current.account_id}:${data.terraform_remote_state.cluster[0].outputs.api_gateway.id}/*/${aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method}${aws_api_gateway_resource.api_resource-{{lambda-name}}[0].path}"]
 }
 
-# API Gateway Route for the Lambda function
-resource "aws_apigatewayv2_route" "lambda_route-{{lambda-name}}" {
+    # condition {
+    #   test     = "ArnEquals"
+    #   variable = "aws:SourceArn"
+    #   values   = [data.terraform_remote_state.cluster[0].outputs.api_gateway.arn]
+    # }
+  }
+}
+
+# SQS Queue Access Policy
+resource "aws_sqs_queue_policy" "sqs_policy-{{lambda-name}}" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
 
-  api_id    = data.terraform_remote_state.cluster[0].outputs.api_gateway_id
-  route_key = "POST /${var.lambda_name}"
-  target    = "integrations/${aws_apigatewayv2_integration.sqs_integration-{{lambda-name}}[0].id}"
+  queue_url = aws_sqs_queue.lambda_queue-{{lambda-name}}[0].id
+  policy    = data.aws_iam_policy_document.sqs_policy_document-{{lambda-name}}[0].json
+}
+
+# API Gateway Lambda Resource
+resource "aws_api_gateway_resource" "api_resource-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+  parent_id   = data.terraform_remote_state.cluster[0].outputs.api_gateway.root_resource_id
+  path_part   = "${var.lambda_name}"
+}
+
+# API Gateway Lambda Method
+resource "aws_api_gateway_method" "api_method-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+  
+  rest_api_id   = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+  resource_id   = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+# API Gateway Lambda Integration
+resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+  resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
+  http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS"
+  credentials             = data.terraform_remote_state.cluster[0].outputs.api_gateway_sqs_role_arn
+  uri                     = "arn:aws:apigateway:${var.region}:sqs:path/${data.aws_caller_identity.current.account_id}/${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].name}"
+
+  request_templates = {
+    "application/json" = <<EOF
+Action=SendMessage&MessageBody=$util.urlEncode($input.body)&MessageGroupId=#if($!input.path('$.message.from.id') != "")$input.path('$.message.from.id')#elseif($!input.path('$.callback_query.from.id') != "")$input.path('$.callback_query.from.id')#elseif($!input.path('$.action') != "")action#else unknown#end
+EOF
+  }
+
+  request_parameters = {
+    "integration.request.header.Content-Type" = "'application/x-www-form-urlencoded'"
+  }
+
+  passthrough_behavior = "NEVER"
+  timeout_milliseconds = 29000
+}
+
+# API Gateway Lambda Integration Response
+resource "aws_api_gateway_integration_response" "sqs_integration-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  rest_api_id = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].rest_api_id
+  resource_id = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].resource_id
+  http_method = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].http_method
+  status_code = 200
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_trigger-{{lambda-name}}" {
@@ -253,7 +325,41 @@ resource "aws_iam_role_policy_attachment" "lambda_efs-{{lambda-name}}" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonElasticFileSystemClientFullAccess"
 }
 
+resource "null_resource" "deploy_api-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  triggers = {
+    timestamp = timestamp()
+  }
+
+  depends_on = [
+    aws_api_gateway_resource.api_resource-{{lambda-name}},
+    aws_api_gateway_method.api_method-{{lambda-name}},
+    aws_api_gateway_integration.sqs_integration-{{lambda-name}}
+  ]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      aws apigateway create-deployment \
+        --rest-api-id ${data.terraform_remote_state.cluster[0].outputs.api_gateway.id} \
+        --stage-name ${var.cluster_tags.cluster} \
+        --description "Deployment triggered by Terraform"
+    EOT
+    environment = {
+      AWS_ACCESS_KEY_ID     = data.terraform_remote_state.cluster[0].outputs.api_deployer_access_key
+      AWS_SECRET_ACCESS_KEY = data.terraform_remote_state.cluster[0].outputs.api_deployer_secret_key
+      AWS_DEFAULT_REGION    = var.region
+    }
+  }
+}
+
 # Output API Endpoint (Webhook) 
-output "api_gateway_url" {
-  value = try("${data.terraform_remote_state.cluster[0].outputs.api_gateway_endpoint}/${var.lambda_name}", null)
+output "webhook_url" {
+  value = try(
+    format(
+      "%s/%s/%s",
+      trimsuffix("${data.terraform_remote_state.cluster[0].outputs.api_gateway_endpoint}", "/"),
+      var.cluster_tags.cluster,
+      trimprefix("${aws_api_gateway_resource.api_resource-{{lambda-name}}[0].path}", "/")),
+    null)
 }
