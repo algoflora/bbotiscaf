@@ -2,6 +2,8 @@ locals {
   lambda_tags = merge(var.cluster_tags, {
     lambda = var.lambda_name
   })
+
+  webhook_url = try("${data.terraform_remote_state.cluster[0].outputs.api_deployment.invoke_url}${data.terraform_remote_state.cluster[0].outputs.api_stage.stage_name}${aws_api_gateway_resource.api_resource-{{lambda-name}}[0].path}", null)
 }
 
 variable "lambda_workspace" {
@@ -130,13 +132,7 @@ data "aws_iam_policy_document" "sqs_policy_document-{{lambda-name}}" {
       test     = "ArnLike"
       variable = "aws:SourceArn"
       values   = ["arn:aws:execute-api:${var.region}:${data.aws_caller_identity.current.account_id}:${data.terraform_remote_state.cluster[0].outputs.api_gateway.id}/*/${aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method}${aws_api_gateway_resource.api_resource-{{lambda-name}}[0].path}"]
-}
-
-    # condition {
-    #   test     = "ArnEquals"
-    #   variable = "aws:SourceArn"
-    #   values   = [data.terraform_remote_state.cluster[0].outputs.api_gateway.arn]
-    # }
+    }
   }
 }
 
@@ -154,7 +150,7 @@ resource "aws_api_gateway_resource" "api_resource-{{lambda-name}}" {
 
   rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
   parent_id   = data.terraform_remote_state.cluster[0].outputs.api_gateway.root_resource_id
-  path_part   = "${var.lambda_name}"
+  path_part   = "${var.lambda_name}-${var.bot_token}"
 }
 
 # API Gateway Lambda Method
@@ -165,6 +161,48 @@ resource "aws_api_gateway_method" "api_method-{{lambda-name}}" {
   resource_id   = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
   http_method   = "POST"
   authorization = "NONE"
+}
+
+# API Gateway Lambda Method Success Response
+resource "aws_api_gateway_method_response" "response_202-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+  resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
+  http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
+  status_code = "202"
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+}
+
+# API Gateway Lambda Method Forbidden Response
+resource "aws_api_gateway_method_response" "response_403-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+  resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
+  http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
+  status_code = "403"
+
+  response_models = {
+    "application/json" = "Error"
+  }
+}
+
+# API Gateway Lambda Method Error Response
+resource "aws_api_gateway_method_response" "response_500-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+  resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
+  http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
+  status_code = "500"
+
+  response_models = {
+    "application/json" = "Error"
+  }
 }
 
 # API Gateway Lambda Integration
@@ -181,27 +219,81 @@ resource "aws_api_gateway_integration" "sqs_integration-{{lambda-name}}" {
   uri                     = "arn:aws:apigateway:${var.region}:sqs:path/${data.aws_caller_identity.current.account_id}/${aws_sqs_queue.lambda_queue-{{lambda-name}}[0].name}"
 
   request_templates = {
-    "application/json" = <<EOF
+    "application/json" = <<VTL
+#set($secretToken = $input.params('X-Telegram-Bot-Api-Secret-Token'))
+#set($expectedToken = '${random_string.secret_token-{{lambda-name}}[0].result}')
+#if($secretToken != $expectedToken)
+  #set($context.responseOverride.status = 403)
+  #set($context.responseOverride.header.Content-Type = 'application/json')
+#else
 Action=SendMessage&MessageBody=$util.urlEncode($input.body)&MessageGroupId=#if($!input.path('$.message.from.id') != "")$input.path('$.message.from.id')#elseif($!input.path('$.callback_query.from.id') != "")$input.path('$.callback_query.from.id')#elseif($!input.path('$.action') != "")action#else unknown#end
-EOF
+#end
+VTL
   }
 
   request_parameters = {
     "integration.request.header.Content-Type" = "'application/x-www-form-urlencoded'"
   }
 
-  passthrough_behavior = "NEVER"
+  passthrough_behavior = "WHEN_NO_TEMPLATES"
   timeout_milliseconds = 29000
 }
 
-# API Gateway Lambda Integration Response
-resource "aws_api_gateway_integration_response" "sqs_integration-{{lambda-name}}" {
+resource "aws_api_gateway_integration_response" "response_202-{{lambda-name}}" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
 
-  rest_api_id = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].rest_api_id
-  resource_id = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].resource_id
-  http_method = aws_api_gateway_integration.sqs_integration-{{lambda-name}}[0].http_method
-  status_code = 200
+  rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+  resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
+  http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
+  status_code = aws_api_gateway_method_response.response_202-{{lambda-name}}[0].status_code
+
+  selection_pattern = "^2\\d{2}$"
+
+  response_templates = {
+    "application/json" = jsonencode({})
+  }
+
+  depends_on = [aws_api_gateway_integration.sqs_integration-{{lambda-name}}]
+}
+
+resource "aws_api_gateway_integration_response" "response_400-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+  resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
+  http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
+  status_code = aws_api_gateway_method_response.response_500-{{lambda-name}}[0].status_code
+
+  selection_pattern = "^4\\d{2}$"
+
+  response_templates = {
+    "application/json" = <<VTL
+#if($context.responseOverride.status == "403"){"message":"Invalid secret token"}
+#else#set{"message":"$input.body"}
+#end
+VTL
+  }
+
+  depends_on = [aws_api_gateway_integration.sqs_integration-{{lambda-name}}]
+}
+
+resource "aws_api_gateway_integration_response" "response_500-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  rest_api_id = data.terraform_remote_state.cluster[0].outputs.api_gateway.id
+  resource_id = aws_api_gateway_resource.api_resource-{{lambda-name}}[0].id
+  http_method = aws_api_gateway_method.api_method-{{lambda-name}}[0].http_method
+  status_code = aws_api_gateway_method_response.response_500-{{lambda-name}}[0].status_code
+
+  selection_pattern = "^5\\d{2}$"
+
+  response_templates = {
+    "application/json" = jsonencode({
+      message = "Internal server error"
+    })
+  }
+
+  depends_on = [aws_api_gateway_integration.sqs_integration-{{lambda-name}}]
 }
 
 resource "aws_lambda_event_source_mapping" "sqs_trigger-{{lambda-name}}" {
@@ -325,6 +417,37 @@ resource "aws_iam_role_policy_attachment" "lambda_efs-{{lambda-name}}" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonElasticFileSystemClientFullAccess"
 }
 
+resource "random_string" "secret_token-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  length  = 32
+  special = false
+
+  keepers = {
+    timestamp = timestamp()
+  }
+}
+
+resource "aws_secretsmanager_secret" "bot_secret_token-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  name = "bbotiscaf-${var.cluster_tags.cluster}-${var.lambda_name}-secret-token"
+}
+
+resource "aws_secretsmanager_secret_version" "bot_secret_token-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  secret_id     = aws_secretsmanager_secret.bot_secret_token-{{lambda-name}}[0].id
+  secret_string = random_string.secret_token-{{lambda-name}}[0].result
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_secrets_manager-{{lambda-name}}" {
+  count = terraform.workspace == var.lambda_workspace ? 1 : 0
+
+  role       = aws_iam_role.lambda-{{lambda-name}}[0].name
+  policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+}
+
 resource "null_resource" "deploy_api-{{lambda-name}}" {
   count = terraform.workspace == var.lambda_workspace ? 1 : 0
 
@@ -335,16 +458,25 @@ resource "null_resource" "deploy_api-{{lambda-name}}" {
   depends_on = [
     aws_api_gateway_resource.api_resource-{{lambda-name}},
     aws_api_gateway_method.api_method-{{lambda-name}},
-    aws_api_gateway_integration.sqs_integration-{{lambda-name}}
+    aws_api_gateway_integration.sqs_integration-{{lambda-name}},
+    aws_secretsmanager_secret_version.bot_secret_token-{{lambda-name}}
   ]
 
   provisioner "local-exec" {
-    command = <<EOT
+    command = <<SHELL
       aws apigateway create-deployment \
         --rest-api-id ${data.terraform_remote_state.cluster[0].outputs.api_gateway.id} \
         --stage-name ${var.cluster_tags.cluster} \
         --description "Deployment triggered by Terraform"
-    EOT
+
+      curl -X POST https://api.telegram.org/bot${var.bot_token}/setWebhook \
+        -H "Content-Type: application/json" \
+        -d '{
+          "url": "${local.webhook_url}",
+          "secret_token": "${random_string.secret_token-{{lambda-name}}[0].result}"
+        }'
+    SHELL
+
     environment = {
       AWS_ACCESS_KEY_ID     = data.terraform_remote_state.cluster[0].outputs.api_deployer_access_key
       AWS_SECRET_ACCESS_KEY = data.terraform_remote_state.cluster[0].outputs.api_deployer_secret_key
@@ -355,11 +487,5 @@ resource "null_resource" "deploy_api-{{lambda-name}}" {
 
 # Output API Endpoint (Webhook) 
 output "webhook_url" {
-  value = try(
-    format(
-      "%s/%s/%s",
-      trimsuffix("${data.terraform_remote_state.cluster[0].outputs.api_gateway_endpoint}", "/"),
-      var.cluster_tags.cluster,
-      trimprefix("${aws_api_gateway_resource.api_resource-{{lambda-name}}[0].path}", "/")),
-    null)
+  value = local.webhook_url
 }

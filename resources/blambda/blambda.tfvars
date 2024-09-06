@@ -49,3 +49,4 @@ lambda_architectures = ["{{lambda-architecture}}"]
 {% if use-s3 %}
 lambda_s3_key = "{{lambda-s3-key}}"
 {% endif %}
+bot_token = "{{bot-token}}"
