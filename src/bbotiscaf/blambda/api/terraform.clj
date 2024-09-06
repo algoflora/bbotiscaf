@@ -3,6 +3,7 @@
     [babashka.fs :as fs]
     [babashka.process :refer [shell]]
     [bbotiscaf.blambda.internal :as lib]
+    [bbotiscaf.impl.config :refer [get-config]]
     [clojure.java.io :as io]
     [clojure.string :as str]
     [selmer.parser :as selmer]))
@@ -34,7 +35,8 @@
               :lambda-architecture (first (lib/runtime-layer-architectures opts))
               :deps-layer-compatible-architectures (lib/deps-layer-architectures opts)
               :deps-layer-compatible-runtimes (lib/deps-layer-runtimes opts)
-              :deps-layer-filename deps-zipfile}))))
+              :deps-layer-filename deps-zipfile
+              :bot-token (:bot/token (get-config))}))))
 
 
 (defn run-tf-cmd!

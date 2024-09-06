@@ -4,6 +4,13 @@ terraform {
     key    = "{{cluster}}/terraform.tfstate"
     encrypt = true
   }
+
+  required_providers {
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
 }
 
 variable "runtime_layer_name" {}
@@ -22,6 +29,8 @@ variable "lambda_memory_size" {}
 variable "lambda_runtime" {}
 variable "lambda_architectures" {}
 variable "lambda_timeout" {}
+
+variable "bot_token" {}
 
 variable "cluster_workspace" {
   type = string
@@ -303,10 +312,6 @@ resource "aws_api_gateway_deployment" "cluster" {
   depends_on = [aws_api_gateway_method.ping[0]]
 
   rest_api_id = aws_api_gateway_rest_api.cluster[0].id
-
-  triggers = {
-    redeployment = timestamp()
-  }
 
   lifecycle {
     create_before_destroy = true
@@ -609,6 +614,14 @@ output "api_deployer_secret_key" {
 
 output "api_gateway" {
   value = try(aws_api_gateway_rest_api.cluster[0], null)
+}
+
+output "api_deployment" {
+  value = try(aws_api_gateway_deployment.cluster[0], null)
+}
+
+output "api_stage" {
+  value = try(aws_api_gateway_stage.cluster[0], null)
 }
 
 output "api_gateway_endpoint" {
