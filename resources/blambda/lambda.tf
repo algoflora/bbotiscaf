@@ -269,7 +269,7 @@ resource "aws_api_gateway_integration_response" "response_400-{{lambda-name}}" {
   response_templates = {
     "application/json" = <<VTL
 #if($context.responseOverride.status == "403"){"message":"Invalid secret token"}
-#else#set{"message":"$input.body"}
+#else{"message":"$input.body"}
 #end
 VTL
   }
