@@ -219,7 +219,7 @@
         new-msg    (send-message-to-chat argm (to-edit? optm user))
         new-msg-id (:message_id new-msg)]
     (log/debug ::send-to-chat-message
-               "Send to chat message: %s %s %s %s" optm new-msg-id new-msg user
+               "Message sent to chat: %s %s %s %s" optm new-msg-id new-msg user
                {})
     (when (and (not (:temp optm)) (not= new-msg-id (:msg-id user)))
       (u/set-msg-id user new-msg-id))
@@ -257,6 +257,13 @@
 
 (defn delete-message
   [user mid]
-  (api-wrap :deleteMessage {:chat_id (:user/id user)
-                            :message_id mid})
+  (try
+    (api-wrap :deleteMessage {:chat_id (:user/id user)
+                              :message_id mid})
+    (catch Exception ex
+      (log/warn ::delete-message-exception
+                "Exception on Message deletion: %s" (ex-message ex)
+                {:user user
+                 :message-id mid
+                 :exception ex})))
   (clb/delete user mid))

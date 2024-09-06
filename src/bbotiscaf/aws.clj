@@ -25,7 +25,7 @@
    ;; :lambda-name
    ;; :cluster
    :lambda-runtime "provided.al2023"
-   :lambda-timeout 5
+   :lambda-timeout 15
    :runtime-layer-name "blambda-layer"
    :source-dir "."
    :source-files (into [] (concat (get-tree "./src") (get-tree "./resources")))

@@ -19,9 +19,14 @@
   (d/pull (dtlv) '[*] [:user/username username]))
 
 
+(defn load-by-id
+  [id]
+  (d/pull (dtlv) '[*] [:user/id id]))
+
+
 (defn- load-by-udata
   [udata]
-  (d/pull (dtlv) '[*] [:user/id (:id udata)]))
+  (load-by-id (:id udata)))
 
 
 (defn- is-new-udata?

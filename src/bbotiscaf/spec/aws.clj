@@ -16,25 +16,26 @@
 (def SQSRecordSchema
   [:map
    {:closed true}
-   [:md5OfBody :string]
-   [:eventSourceARN :string]
-   [:awsRegion :string]
-   [:messageId :string]
-   [:eventSource :string]
-   [:messageAttributes [:map]]
-   [:body :string]
-   [:receiptHandle :string]
    [:attributes
     [:map
      {:closed true}
-     [:ApproximateReceiveCount :string]
-     [:SentTimestamp :string]
-     [:SequenceNumber :string]
-     [:MessageGroupId :string]
-     [:SenderId :string]
-     [:MessageDeduplicationId :string]
-     [:ApproximateFirstReceiveTimestamp :string]
-     [:AWSTraceHeader :string]]]])
+     [:AWSTraceHeader {:optional true} :string]
+     [:ApproximateFirstReceiveTimestamp {:optional true} :string]
+     [:ApproximateReceiveCount {:optional true} :string]
+     [:MessageDeduplicationId {:optional true} :string]
+     [:MessageGroupId {:optional true} :string]
+     [:SenderId {:optional true} :string]
+     [:SentTimestamp {:optional true} :string]
+     [:SequenceNumber {:optional true} :string]
+     [:SqsManagedSseEnabled {:optional true} :string]]]
+   [:awsRegion :string]
+   [:body :string]
+   [:eventSource :string]
+   [:eventSourceARN :string]
+   [:md5OfBody :string]
+   [:messageAttributes [:map]]
+   [:messageId :string]
+   [:receiptHandle :string]])
 
 
 (def SQSRecordsBunch

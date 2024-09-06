@@ -18,6 +18,17 @@
 
 (def ^:private types #{:message :callback_query :pre_checkout_query})
 
+
+(m/=> handle-update- [:=> [:cat :keyword spec.tg/Update] :nil])
+
+
+(defn- handle-update-
+  [type update]
+  (binding [*user* (u/load-or-create (get-in update [type :from]))
+            *upd*  update]
+    (handle type (type update))))
+
+
 (m/=> handle-update [:-> spec.tg/Update :nil])
 
 
@@ -27,18 +38,16 @@
   (let [type (some types (keys update))]
     (d/with-transaction [conn (app/db-conn)]
                         (binding [*dtlv* conn]
-                          (binding [*user* (u/load-or-create (get-in update [type :from]))
-                                    *upd*  update]
-                            (handle type (type update)))))))
+                          (handle-update- type update)))))
 
 
 (defn- reset
   []
-  (u/set-msg-id *user* 0)
   (log/warn ::msg-id-reset-warning
             "Reset of msg-id called!"
             {:update *upd* :user *user*})
-  (handle-update *upd*))
+  (u/set-msg-id *user* 0)
+  (handle-update- :message *upd*))
 
 
 (defn- handle-message
