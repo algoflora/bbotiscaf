@@ -4,8 +4,7 @@
     [clojure.test :refer [deftest]]))
 
 
-(deftest e2e
-
+(deftest core
   (flow "Main Message" nil
         [:ivan/send-text "Ivan"
          :ivan/check-msg "Hi, Ivan!" '() [[#"Go"] ["Temp"]]
@@ -34,6 +33,20 @@
          :mary/click-btn 2 "✖️"
          :mary/click-btn 1 "✖️"
          :ivan/check-msg 1 "Hi, stranger!"
-         :mary/check-msg 1 "Hi, stranger!"])
+         :mary/check-msg 1 "Hi, stranger!"]))
 
-  #_(flow "test-3" :test-2 [:user/check-msg "Go, stranger!"]))
+
+(deftest db
+  (flow "Aditional entities" nil 'bbotiscaf.e2e-test.handler/store
+        [:ivan/send-text "/start"
+         :ivan/check-msg "Hello" [["Save"]]
+         :mary/send-text "/start"
+         :mary/check-msg "Hello" [["Save"]]
+         :ivan/click-btn "Save"
+         :mary/click-btn "Save"
+         :mary/check-msg "Name saved" [["Reveal"]]
+         :ivan/check-msg "Name saved" [["Reveal"]]
+         :mary/click-btn "Reveal"
+         :ivan/click-btn "Reveal"
+         :ivan/check-msg "IVAN"
+         :mary/check-msg "MARY"]))

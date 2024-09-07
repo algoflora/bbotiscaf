@@ -1,13 +1,17 @@
 (ns bbotiscaf.misc
   (:require
-    [aero.core :refer [read-config]]
     [babashka.fs :as fs]
-    [bbotiscaf.impl.config :refer [profile]]
+    [clojure.edn :as edn]
     [clojure.java.io :as io]
     [clojure.stacktrace :as st]
     [clojure.walk :refer [postwalk]]
     [malli.core :as m]
     [taoensso.timbre :as log]))
+
+
+(defn dbg
+  [x]
+  (println "DBG\t" x) x)
 
 
 (defn ex->map
@@ -31,6 +35,11 @@
                  {:explanation explanation})))
 
 
+(defn- to-readable
+  [path]
+  (or (io/resource path) (.toFile path)))
+
+
 (defn read-resource-dir
   ([path] (read-resource-dir path "**.edn"))
   ([path pattern]
@@ -38,7 +47,7 @@
                     io/resource
                     (fs/glob pattern)
                     flatten)
-            (map #(-> % slurp (read-config profile)))
+            (map #(-> % to-readable slurp edn/read-string))
             (apply merge))))
 
 

@@ -66,7 +66,7 @@
                               (filter #(-> % second some?))
                               (into {}))
                          {:callback/uuid uuid
-                          :callback/function @app/handler-main
+                          :callback/function (app/handler-main)
                           :callback/arguments {}
                           :callback/user {:db/id -1}
                           :callback/is-service false}]))

@@ -41,6 +41,12 @@
 
 (def api-fn (delay (:api/fn @app)))
 
-(def handler-main (delay (:handler/main @app)))
 
-(def handler-namespaces (delay (:handler/namespaces @app)))
+(defn handler-main
+  []
+  (:handler/main @app))
+
+
+(defn handler-namespaces
+  []
+  (:handler/namespaces @app))

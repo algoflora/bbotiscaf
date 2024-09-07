@@ -54,11 +54,6 @@
   (reset! dummies (or data {})))
 
 
-(defn dbg
-  [x]
-  (println "DBG\t" x) x)
-
-
 (m/=> get-by-chat-id [:-> :int spec.e2e/Dummy-Entry])
 
 

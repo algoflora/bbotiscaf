@@ -95,13 +95,14 @@
 
 
 (defn startup!
-  []
-  (when-not (app/app-set?)
-    (mi/instrument! {:report malli-instrument-error-handler})
-    (let [config (conf/get-config)]
-      (app/set-app! (ig/init config))
-      (log/info ::startup-completed
-                "Startup completed: %s" (app/get-app)))))
+  ([] (startup! {}))
+  ([conf]
+   (when-not (app/app-set?)
+     (mi/instrument! {:report malli-instrument-error-handler})
+     (let [config (conf/get-config)]
+       (app/set-app! (ig/init (merge config conf)))
+       (log/info ::startup-completed
+                 "Startup completed: %s" (app/get-app))))))
 
 
 (defn shutdown!

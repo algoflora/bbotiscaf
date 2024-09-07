@@ -13,7 +13,7 @@
 
 (def require-namespaces
   (delay
-    (let [namespaces  @app/handler-namespaces
+    (let [namespaces  (app/handler-namespaces)
           time-millis (* (do-nanos (doseq [ns (conj namespaces 'bbotiscaf.handler)]
                                      (require ns)))
                          0.000001)]
@@ -135,7 +135,7 @@
 (defn check-handler!
   [user]
   (let [user-callback (-> user :user/uuid load-callback)
-        main-handler  @app/handler-main]
+        main-handler  (app/handler-main)]
     (when-not (or (= main-handler (:callback/function user-callback))
                   (not-empty (:callback/arguments user-callback)))
       (set-callback user main-handler nil false (:user/uuid user)))))

@@ -161,20 +161,21 @@
 
 
 (defn flow
-  [name data-from-flow blueprint]
-  (let [{:keys [datoms dummies]} (if (some? data-from-flow) (data-from-flow @flows-data) {})
-        to-transact (mapv #(-> % seq (conj :db/add) vec) datoms)]
-    (testing name
-      (sys/startup!)
-      (dum/restore dummies)
-      (let [final-datoms
-            (binding [*dtlv* (app/db-conn)]
-              (d/transact! *dtlv* to-transact)
-              (apply-blueprint blueprint)
-              (d/datoms (dtlv) :eav))
-            final-dummies (dum/dump-all)]
-        (dum/clear-all)
-        (sys/shutdown!)
-        (swap! flows-data assoc (-> name (str/replace #" " "-") str/lower-case keyword)
-               {:datoms (negate-db-ids final-datoms)
-                :dummies final-dummies})))))
+  ([name data-from-flow blueprint] (flow name data-from-flow nil blueprint))
+  ([name data-from-flow handler blueprint]
+   (let [{:keys [datoms dummies]} (if (some? data-from-flow) (data-from-flow @flows-data) {})
+         to-transact (mapv #(-> % seq (conj :db/add) vec) datoms)]
+     (testing name
+       (sys/startup! (when (symbol? handler) {:handler/main handler}))
+       (dum/restore dummies)
+       (let [final-datoms
+             (binding [*dtlv* (app/db-conn)]
+               (d/transact! *dtlv* to-transact)
+               (apply-blueprint blueprint)
+               (d/datoms (dtlv) :eav))
+             final-dummies (dum/dump-all)]
+         (dum/clear-all)
+         (sys/shutdown!)
+         (swap! flows-data assoc (-> name (str/replace #" " "-") str/lower-case keyword)
+                {:datoms (negate-db-ids final-datoms)
+                 :dummies final-dummies}))))))
