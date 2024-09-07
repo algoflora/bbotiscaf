@@ -2,12 +2,12 @@
   (:require
     [bbotiscaf.impl.config :as conf]
     [bbotiscaf.impl.e2e]
+    [bbotiscaf.impl.errors :refer [handle-error]]
     [bbotiscaf.impl.system.app :as app]
-    [bbotiscaf.misc :refer [read-resource-dir throw-error]]
+    [bbotiscaf.misc :refer [read-resource-dir]]
     [clojure.edn :as edn]
     [clojure.java.io :as io]
     [integrant.core :as ig]
-    [malli.core :as m]
     [malli.instrument :as mi]
     [taoensso.timbre :as log]))
 
@@ -85,20 +85,16 @@
   handler)
 
 
-(defn- malli-instrument-error-handler
-  [error data]
-  (let [func (:fn-name data)
-        expl (m/explain (:schema data) (:value data))]
-    (throw-error ::malli-instrument-error
-                 (format "Malli instrument error in function '%s'!" func)
-                 {:funtion func :explanation expl :error error :data data})))
-
-
 (defn startup!
   ([] (startup! {}))
   ([conf]
    (when-not (app/app-set?)
-     (mi/instrument! {:report malli-instrument-error-handler})
+     (Thread/setDefaultUncaughtExceptionHandler
+       (reify Thread$UncaughtExceptionHandler
+         (uncaughtException
+           [_ thread e]
+           (handle-error thread e))))
+     (mi/instrument!)
      (let [config (conf/get-config)]
        (app/set-app! (ig/init (merge config conf)))
        (log/info ::startup-completed

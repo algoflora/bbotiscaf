@@ -45,7 +45,7 @@
 
 
 (def lambda-stdout-appender
-  {:enabled?   true
+  {:enabled?   (= conf/profile :test)
    :async?     false
    :min-level  :debug
    :rate-limit nil
@@ -76,13 +76,27 @@
             data))
 
 
-(def lambda-json-appender
+(defn- json-prepare
+  [event]
+  (let [data (check-json (select-keys (merge event (process-vargs (:vargs event)))
+                                      [:instant :message-text :event-name :vargs
+                                       :?err :?file :?line]))
+        vargs (:vargs data)]
+    (-> data
+        (dissoc :vargs)
+        (assoc :data (last vargs)))))
+
+
+(def lambda-json-println-appender
+  {:enabled? (= conf/profile :aws)
+   :fn (fn [event]
+         (println (generate-string (json-prepare event))))})
+
+
+(def lambda-json-spit-appender
   {:enabled? (= conf/profile :test)
    :fn (fn [event]
-         (let [data (check-json (select-keys (merge event (process-vargs (:vargs event)))
-                                             [:instant :message-text :event-name :vargs
-                                              :?err :?file :?line]))]
-           (spit "logs.json" (str (generate-string data) "\n") :append true)))})
+         (spit "logs.json" (generate-string (str (json-prepare event) "\n")) :append true))})
 
 
 (fs/delete-if-exists "logs.json")
@@ -93,7 +107,8 @@
 
 (timbre/merge-config! {:min-level :debug
                        :appenders (merge {:println lambda-stdout-appender
-                                          :json lambda-json-appender})})
+                                          :json-file lambda-json-spit-appender
+                                          :json-print lambda-json-println-appender})})
 
 
 (defn inject-lambda-context!

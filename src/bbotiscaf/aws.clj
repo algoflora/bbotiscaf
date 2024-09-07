@@ -3,6 +3,7 @@
     [babashka.fs :as fs]
     [bbotiscaf.blambda.api :refer [build-all]]
     [bbotiscaf.blambda.api.terraform :refer [write-config apply!]]
+    [bbotiscaf.misc :refer [do-nanos]]
     [bbotiscaf.spec.core :as spec]
     [malli.core :as m]))
 
@@ -40,7 +41,9 @@
 
 (defn deploy!
   [opts]
-  (let [opts (merge default-opts opts)]
-    (build-all opts)
-    (write-config opts)
-    (apply! opts)))
+  (println "Deploy started...\n")
+  (let [opts (merge default-opts opts)
+        nsec (do-nanos (build-all opts)
+                       (write-config opts)
+                       (apply! opts))]
+    (printf "Deploy finished in %.2f seconds." (* nsec 0.000000001))))

@@ -2,7 +2,7 @@
   (:require
     [bbotiscaf.dynamic :refer [*dtlv* dtlv *user*]]
     [bbotiscaf.impl.system.app :as app]
-    [bbotiscaf.misc :refer [throw-error do-nanos]]
+    [bbotiscaf.misc :refer [do-nanos]]
     [bbotiscaf.spec.model :as spec.mdl]
     [malli.core :as m]
     [taoensso.timbre :as log]))
@@ -120,12 +120,15 @@
   [uuid]
   (let [callback (d/pull (dtlv) '[* {:callback/user [*]}] [:callback/uuid uuid])]
     (when (nil? callback)
-      (throw-error ::callback-not-found "Callback not found!" {:uuid uuid}))
+      (throw (ex-info "Callback not found!"
+                      {:event ::callback-not-found-error
+                       :uuid uuid})))
     (log/debug ::callback-loaded "Callback loaded" {:callback callback})
     (when (not= (:user/id *user*) (-> callback :callback/user :user/id))
-      (throw-error ::wrong-user-callback-call
-                   "Wrong User attempt to load Callback!"
-                   {:user *user* :callback callback}))
+      (throw (ex-info "Wrong User attempt to load Callback!"
+                      {:event ::wrong-user-callback-call-error
+                       :user *user*
+                       :callback callback})))
     callback))
 
 
