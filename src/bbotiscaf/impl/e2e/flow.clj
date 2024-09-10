@@ -132,6 +132,13 @@
         (-check-message msg arg)))))
 
 
+(defn check-no-temp-messages
+  [dummy]
+  (let [m-msg (get-message dummy nil)
+        t-msg (get-message dummy 1)]
+    (is (= m-msg t-msg))))
+
+
 ;; TODO: Find out what the fuck!
 ;; (m/=> apply-blueprint [:-> spec.bp/Blueprint :nil])
 
