@@ -73,22 +73,25 @@
 (defn- load-role
   [roles rs]
   (let [entries ((first rs) roles)]
-    (postwalk (fn [x]
-                (cond
-                  (and (keyword? x) (some #{x} (set rs)))
-                  (throw (ex-info "Circular roles dependencies!"
-                                  {:event ::circular-roles-error
-                                   :role x
-                                   :roles roles}))
+    (flatten (mapv (fn [x]
+                     (cond
+                       (and (keyword? x) (some #{x} (set rs)))
+                       (throw (ex-info "Circular roles dependencies!"
+                                       {:event ::circular-roles-error
+                                        :role x
+                                        :roles roles}))
 
-                  (keyword? x) (load-role roles (conj x rs))
-                  :else x))
-              entries)))
+                       (keyword? x) (load-role roles (conj rs x))
+                       :else x))
+                   entries))))
 
 
 (defmethod ig/init-key :bot/roles
   [_ roles]
-  (into {} (map (fn [[k _]] [k (load-role roles k)]) roles)))
+  (log/debug ::init-bot-roles
+             "Applying :bot/roles %s..." roles
+             {:namespaces roles})
+  (into {} (map (fn [[k _]] [k (load-role roles (list k))]) roles)))
 
 
 (defmethod ig/init-key :handler/namespaces

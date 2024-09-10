@@ -96,7 +96,7 @@
 (def lambda-json-spit-appender
   {:enabled? (= conf/profile :test)
    :fn (fn [event]
-         (spit "logs.json" (generate-string (str (json-prepare event) "\n")) :append true))})
+         (spit "logs.json" (str (generate-string (json-prepare event)) "\n") :append true))})
 
 
 (fs/delete-if-exists "logs.json")
@@ -105,7 +105,7 @@
 (fs/delete-if-exists "logs.edn")
 
 
-(timbre/merge-config! {:min-level :debug
+(timbre/merge-config! {:min-level :info
                        :appenders (merge {:println lambda-stdout-appender
                                           :json-file lambda-json-spit-appender
                                           :json-print lambda-json-println-appender})})

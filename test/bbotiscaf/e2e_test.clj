@@ -50,3 +50,11 @@
          :ivan/click-btn "Reveal"
          :ivan/check-msg "IVAN"
          :mary/check-msg "MARY"]))
+
+
+(deftest roles
+  (flow "Roles" nil 'bbotiscaf.e2e-test.handler/roled
+        [:user/send-text "/start"
+         :admin/send-text "/start"
+         :user/check-msg "Hi"
+         :admin/check-msg "Hello, sir"]))

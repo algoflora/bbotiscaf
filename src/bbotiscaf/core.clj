@@ -4,7 +4,6 @@
     [bbotiscaf.impl.handler :as h]
     [bbotiscaf.impl.system :as sys]
     [bbotiscaf.logging :as logging]
-    [bbotiscaf.misc :refer [throw-error]]
     [bbotiscaf.spec.action :as spec.act]
     [bbotiscaf.spec.aws :as spec.aws]
     [bbotiscaf.spec.core :as spec]

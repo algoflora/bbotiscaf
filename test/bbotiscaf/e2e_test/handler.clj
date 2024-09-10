@@ -3,8 +3,8 @@
     [bbotiscaf.api :as api]
     [bbotiscaf.button :as b]
     [bbotiscaf.dynamic :refer [*user* *dtlv* dtlv]]
-    [clojure.string :as str]
-    [pod.huahaiy.datalevin :as d]))
+    [bbotiscaf.user :as u]
+    [clojure.string :as str]))
 
 
 (require '[pod.huahaiy.datalevin :as d])
@@ -52,3 +52,9 @@
                             [?e :test-entity/user ?u]
                             [?e :test-entity/data ?n]] (dtlv) (:user/id *user*)))]
     (api/send-message *user* name [])))
+
+
+(defn roled
+  [_]
+  (let [text (if (u/has-role? :admin) "Hello, sir" "Hi")]
+    (api/send-message *user* text [])))
