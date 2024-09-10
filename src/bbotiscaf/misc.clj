@@ -3,10 +3,8 @@
     [babashka.fs :as fs]
     [clojure.edn :as edn]
     [clojure.java.io :as io]
-    [clojure.stacktrace :as st]
     [clojure.walk :refer [postwalk]]
-    [malli.core :as m]
-    [taoensso.timbre :as log]))
+    [malli.core :as m]))
 
 
 (defn dbg
@@ -14,25 +12,12 @@
   (println "DBG\t" x) x)
 
 
-(defn ex->map
-  [ex]
-  {:cause      (ex-cause ex)
-   :stacktrace (with-out-str (st/print-stack-trace ex))})
-
-
-(defn throw-error
-  [kw text data]
-  (let [ex (ex-info text data)]
-    (log/error kw text (merge (ex->map ex) data))
-    (throw ex)))
-
-
 (defn validate!
   [schema value]
   (when-let [explanation (m/explain schema value)]
-    (throw-error ::validation-failed
-                 "Validation failed!"
-                 {:explanation explanation})))
+    (throw (ex-info  "Validation failed!"
+                     {:event :validateion-error
+                      :explanation explanation}))))
 
 
 (defn- to-readable

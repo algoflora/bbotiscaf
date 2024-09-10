@@ -19,16 +19,13 @@
 
 (defn- handle-action
   [{:keys [action] {:keys [type arguments]} :action}]
-  (try
-    (if-let [action-fn (resolve (symbol "actions" type))]
-      (log/info ::action-success
-                "Action '%s' completed successfully" type
-                {:action action
-                 :ok true
-                 :response (action-fn arguments)})
-      (throw (ex-info "Wrong action type!" {:action-type type})))
-    (catch Exception ex
-      (throw-error ::wrong-action-type (ex-message ex) (ex-data ex)))))
+  (if-let [action-fn (resolve (symbol "actions" type))]
+    (log/info ::action-success
+              "Action '%s' completed successfully" type
+              {:action action
+               :ok true
+               :response (action-fn arguments)})
+    (throw (ex-info "Wrong action type!" {:action-type type}))))
 
 
 (m/=> handler [:-> spec/Request :nil])
