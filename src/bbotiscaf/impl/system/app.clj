@@ -1,6 +1,4 @@
-(ns bbotiscaf.impl.system.app
-  (:require
-    [bbotiscaf.misc :refer [throw-error]]))
+(ns bbotiscaf.impl.system.app)
 
 
 (defonce ^:private app (atom nil))
@@ -19,9 +17,9 @@
 (defn set-app!
   [data]
   (when (app-set?)
-    (throw-error ::app-reassign-attempt
-                 "Attempt to reassign app state!"
-                 {:incoming-data data}))
+    (throw (ex-info "Attempt to reassign app state!"
+                    {:event ::app-reassign-attempt-error
+                     :incoming-data data})))
   (reset! app data))
 
 

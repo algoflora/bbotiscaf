@@ -6,5 +6,4 @@
 
  :bot/default-language-code :en
 
- :bot/roles {:admin [1 2 3]
-	     :user [2 5 6]}}
+ :bot/roles {}}

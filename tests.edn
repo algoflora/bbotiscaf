@@ -1,7 +1,8 @@
 #kaocha/v1
-{:tests [{:id          :unit
+{:bindings {kaocha.stacktrace/*stacktrace-filters* ["clojure." "sci." "babashka.impl." "babashka.main"]}
+ :tests [{:id          :e2e
           :test-paths  ["test" "src"]
           :ns-patterns [".*"]}]
  :reporter kaocha.report/dots
- ;; :plugins [:kaocha.plugin/profiling :kaocha.plugin/notifier]
- }
+ :plugins [:kaocha.plugin/profiling]
+ :kaocha.plugin.profiling/profiling? false}

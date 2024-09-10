@@ -2,7 +2,6 @@
   (:require
     [bbotiscaf.core :as bbot]
     [bbotiscaf.impl.e2e.dummy :as dum]
-    [bbotiscaf.misc :refer [throw-error]]
     [bbotiscaf.spec.commons :refer [Regexp]]
     [bbotiscaf.spec.telegram :as spec.tg]
     [malli.core :as m]))
@@ -79,12 +78,14 @@
                       (filter #(some? (re-find btn-re (:text %)))))]
     (cond
       (< 1 (count buttons))
-      (throw-error ::ambiguous-buttons-found "Ambiguous buttons found!"
-                   {:message msg :regex btn-re  :buttons buttons :dummy dummy})
+      (throw (ex-info "Ambiguous buttons found!"
+                      {:event ::ambiguous-buttons-error
+                       :message msg :regex btn-re  :buttons buttons :dummy dummy}))
 
       (zero? (count buttons))
-      (throw-error ::button-not-found "Button not found!"
-                   {:message msg :regex btn-re :dummy dummy})
+      (throw (ex-info "Button not found!"
+                      {:event ::button-not-found-error
+                       :message msg :regex btn-re :dummy dummy}))
 
       :else
       (send-update {:callback_query

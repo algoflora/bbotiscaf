@@ -2,8 +2,10 @@
 
 
 (def SQSContext
-  [:map
+  [:map-of :string :string]
+  #_[:map
    {:closed true}
+   ["transfer-encoding" {:optional true} :string]
    ["content-length" {:optional true} :string]
    ["content-type" :string]
    ["date" :string]
@@ -15,10 +17,9 @@
 
 (def SQSRecordSchema
   [:map
-   {:closed true}
    [:attributes
-    [:map
-     {:closed true}
+    [:map-of :keyword :string]
+    #_[:map
      [:AWSTraceHeader {:optional true} :string]
      [:ApproximateFirstReceiveTimestamp {:optional true} :string]
      [:ApproximateReceiveCount {:optional true} :string]

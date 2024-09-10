@@ -76,7 +76,8 @@
       [:message_id {:optional true} :int]
       [:from  User]
       [:chat Chat]
-      [:date :int]]
+      [:date :int]
+      [:edit_date {:optional true} :int]]
      ReplyMarkup]
     {:registry registry}))
 

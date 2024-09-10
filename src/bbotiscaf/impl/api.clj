@@ -7,7 +7,6 @@
     [bbotiscaf.impl.callback :as clb]
     [bbotiscaf.impl.system.app :as app]
     [bbotiscaf.impl.user :as u]
-    [bbotiscaf.misc :refer [throw-error]]
     [bbotiscaf.spec.model :as spec.mdl]
     [bbotiscaf.spec.telegram :as spec.tg]
     [cheshire.core :refer [generate-string parse-string]]
@@ -100,8 +99,8 @@
 (defn- to-edit?
   [optm user]
   (when (and (some? (:msg-id user)) (= (:to-edit-msg-id optm) (:msg-id user)))
-    (throw-error ::manual-main-message-edit
-                 "Manual editing of Main Message is forbidden!" {}))
+    (throw (ex-info "Manual editing of Main Message is forbidden!"
+                    {:event ::manual-main-message-edit-error})))
   (if (:temp optm)
     (some? (:to-edit-msg-id optm))
     (and (some? (:user/msg-id user))
@@ -166,10 +165,10 @@
          (catch clojure.lang.ExceptionInfo ex
            (if (= 400 (-> ex ex-data :status))
              (send-new-media-to-chat type args-map media)
-             (throw-error ::edit-message-media-failed
-                          "Request to :editMessageMedia failed!"
-                          {:args args-map#
-                           :error ex}))))))
+             (throw (ex-info "Request to :editMessageMedia failed!"
+                             {:event ::edit-message-media-error
+                              :args args-map#
+                              :error ex})))))))
 
 
 (defn- send-media-to-chat
@@ -207,10 +206,10 @@
          (catch clojure.lang.ExceptionInfo ex
            (if (= 400 (-> ex ex-data :status))
              (api-wrap :sendMessage argm)
-             (throw-error ::edit-message-media-failed
-                          "Request to :editMessageText failed!"
-                          {:args argm
-                           :error ex}))))))
+             (throw (ex-info "Request to :editMessageText failed!"
+                             {:event ::edit-message-text-error
+                              :args argm
+                              :error ex})))))))
 
 
 (defmethod send-to-chat :message
@@ -265,5 +264,7 @@
                 "Exception on Message deletion: %s" (ex-message ex)
                 {:user user
                  :message-id mid
-                 :exception ex})))
+                 :exception {:type (type ex)
+                             :message (ex-message ex)
+                             :data (ex-data ex)}})))
   (clb/delete user mid))

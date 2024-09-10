@@ -3,9 +3,9 @@
      [bbotiscaf.dynamic :refer [*dtlv* dtlv]]
      [bbotiscaf.impl.e2e.client :as cl]
      [bbotiscaf.impl.e2e.dummy :as dum]
+     [bbotiscaf.impl.errors :refer [handle-error]]
      [bbotiscaf.impl.system :as sys]
      [bbotiscaf.impl.system.app :as app]
-     [bbotiscaf.misc :refer [throw-error]]
      [bbotiscaf.spec.blueprint :as spec.bp]
      [bbotiscaf.spec.commons :refer [Regexp]]
      [bbotiscaf.spec.telegram :as spec.tg]
@@ -76,9 +76,9 @@
     (cond
       (and (some? text) (nil? caption)) (is (= exp text))
       (and (some? caption) (nil? text)) (is (= exp caption))
-      :else (throw-error ::text-and-caption
-                         ":text and :caption in same Message!"
-                         {:message msg}))))
+      :else (throw (ex-info ":text and :caption in same Message!"
+                            {:event ::text-and-caption-both-error
+                             :message msg})))))
 
 
 (defmethod -check-message java.util.regex.Pattern

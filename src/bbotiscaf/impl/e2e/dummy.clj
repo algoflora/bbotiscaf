@@ -1,7 +1,7 @@
 (ns bbotiscaf.impl.e2e.dummy
   (:require
     [bbotiscaf.impl.system.app :as app]
-    [bbotiscaf.misc :refer [throw-error remove-nils]]
+    [bbotiscaf.misc :refer [remove-nils]]
     [bbotiscaf.spec.e2e :as spec.e2e]
     [bbotiscaf.spec.telegram :as spec.tg]
     [malli.core :as m]))
@@ -137,10 +137,12 @@
   [messages message-id]
   (let [idxs (keep-indexed #(when (= message-id (:message_id %2)) %1) messages)]
     (cond
-      (< 1 (count idxs))   (throw-error ::ambiguous-messages-found "Ambiguous messages found!"
-                                        {:messages messages :message_id message-id})
-      (zero? (count idxs)) (throw-error ::message-not-found "Message not found!"
-                                        {:messages messages :message_id message-id})
+      (< 1 (count idxs))   (throw (ex-info "Ambiguous messages found!"
+                                           {:event ::ambiguous-messages-error
+                                            :messages messages :message_id message-id}))
+      (zero? (count idxs)) (throw (ex-info "Message not found!"
+                                           {:event ::message-not-found-error
+                                            :messages messages :message_id message-id}))
       :else (first idxs))))
 
 
