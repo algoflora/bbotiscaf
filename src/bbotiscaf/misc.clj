@@ -36,12 +36,31 @@
             (apply merge))))
 
 
-(m/=> remove-nils [:-> :map :map])
+(defmulti remove-nils (fn [x]
+                        (cond
+                          (record? x) :default
+                          (map? x)    :map
+                          (vector? x) :vec
+                          :else       :defalut)))
 
 
-(defn remove-nils
-  [in-map]
-  (postwalk (fn [item] (if (map? item) (into {} (filter #(-> % val some?) item)) item)) in-map))
+(defmethod remove-nils :map
+  [m]
+  (into {} (map (fn [[k v]]
+                  (if (nil? v) nil [k (remove-nils v)])) m)))
+
+
+(defmethod remove-nils :vec
+  [v]
+  (filterv some? (map #(if (some? %) (remove-nils %) nil) v)))
+
+
+(defmethod remove-nils :default
+  [x]
+  (identity x))
+
+
+(remove-nils [1 2 nil {:a 5 :b nil :c [1 2 nil 3]}])
 
 
 (defmacro do-nanos

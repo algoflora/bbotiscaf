@@ -1,7 +1,8 @@
 (ns bbotiscaf.user
   (:require
     [bbotiscaf.dynamic :refer [*user*]]
-    [bbotiscaf.impl.system.app :as app]))
+    [bbotiscaf.impl.system.app :as app]
+    [bbotiscaf.api :as api]))
 
 
 (defn has-role?

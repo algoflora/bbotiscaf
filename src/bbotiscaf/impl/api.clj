@@ -7,6 +7,7 @@
     [bbotiscaf.impl.callback :as clb]
     [bbotiscaf.impl.system.app :as app]
     [bbotiscaf.impl.user :as u]
+    [bbotiscaf.misc :as misc]
     [bbotiscaf.spec.model :as spec.mdl]
     [bbotiscaf.spec.telegram :as spec.tg]
     [cheshire.core :refer [generate-string parse-string]]
@@ -218,8 +219,13 @@
         new-msg    (send-message-to-chat argm (to-edit? optm user))
         new-msg-id (:message_id new-msg)]
     (log/debug ::send-to-chat-message
-               "Message sent to chat: %s %s %s %s" optm new-msg-id new-msg user
-               {})
+               "Message sent to chat: %s" text
+               {:user user
+                :text text
+                :entities nil
+                :keyboard kbd
+                :options optm
+                :new-message new-msg})
     (when (and (not (:temp optm)) (not= new-msg-id (:msg-id user)))
       (u/set-msg-id user new-msg-id))
     (set-callbacks-message-id user new-msg)))
@@ -228,7 +234,7 @@
 (defn prepare-and-send
   [type user data kbd & opts]
   (let [optm (prepare-options-map opts)
-        keyboard (prepare-keyboard kbd user optm)]
+        keyboard (prepare-keyboard (misc/remove-nils kbd) user optm)]
     (send-to-chat type user data keyboard optm)))
 
 
