@@ -4,4 +4,7 @@
  :db/conn #profile {:aws  "/mnt/efs/dtlv"
                     :test nil}
 
- :bot/default-language-code :en}
+ :bot/default-language-code :en
+
+ :bot/roles {:admin [1 2 3]
+	     :user [2 5 6]}}
