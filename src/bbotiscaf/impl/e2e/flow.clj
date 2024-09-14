@@ -1,6 +1,5 @@
  (ns bbotiscaf.impl.e2e.flow
    (:require
-     [bbotiscaf.dynamic :refer [*dtlv* dtlv]]
      [bbotiscaf.impl.e2e.client :as cl]
      [bbotiscaf.impl.e2e.dummy :as dum]
      [bbotiscaf.impl.errors :refer [handle-error]]
@@ -48,16 +47,16 @@
     (dum/get-first-message dummy)))
 
 
-(m/=> send-text [:=> [:cat spec.tg/User spec.bp/SendTextBlueprintEntry] :any])
+(m/=> send-text [:=> [:cat spec.tg/User spec.bp/SendTextBlueprintEntryArgs] :any])
 
 
 (defn- send-text
   ([dummy text] (send-text dummy text []))
   ([dummy text entities]
-   (cl/send-text dummy text entities)))
+   (cl/send-text dummy (str text) entities)))
 
 
-(m/=> click-btn [:=> [:cat spec.tg/User spec.bp/ClickBtnBlueprintEntry] :any])
+(m/=> click-btn [:=> [:cat spec.tg/User spec.bp/ClickBtnBlueprintEntryArgs] :any])
 
 
 (defn- click-btn
@@ -120,7 +119,7 @@
   (-check-message-entities msg exp))
 
 
-(m/=> check-msg [:=> [:cat spec.tg/User spec.bp/CheckMessageBlueprintEntry] :nil])
+(m/=> check-msg [:=> [:cat spec.tg/User spec.bp/CheckMessageBlueprintEntryArgs] :nil])
 
 
 (defn- check-msg
@@ -154,14 +153,14 @@
       (is (f v1 v2)))))
 
 
-(defn check-no-temp-messages
+(defn- check-no-temp-messages
   [dummy]
   (let [m-msg (get-message dummy nil)
         t-msg (get-message dummy 1)]
     (is (= m-msg t-msg))))
 
 
-;; TODO: Find out what the fuck!
+;; TODO: Find out what the hell!
 ;; (m/=> apply-blueprint [:-> spec.bp/Blueprint :nil])
 
 
@@ -169,11 +168,37 @@
   [blueprint]
   (when (not-empty blueprint)
     (let [key   (-> blueprint first namespace keyword)
-          dummy (if (dum/exists? key) (-> key dum/get-by-key :dummy) (-> key dum/new :dummy))
+          dummy (cond
+                  (dum/exists? key) (-> key dum/get-by-key :dummy)
+
+                  (= (-> key name (str/split #"\.") first)
+                     (-> (app/handler-main) namespace (str/split #"\.") first))
+                  nil
+
+                  :else (-> key dum/new :dummy))
           func  (->> blueprint first name (symbol "bbotiscaf.impl.e2e.flow") find-var)
           args  (->> blueprint rest (take-while #(not (spec.bp/is-ns-kw? %))))]
       (apply func dummy args)
       (apply-blueprint (drop (+ 1 (count args)) blueprint)))))
+
+
+(defmulti ^:private sub-flow (fn [_ x & _] (cond (fn? x) :function (vector? x) :vector)))
+
+
+(defmethod sub-flow :vector
+  [_ blueprint]
+  ;; TODO: Find out what the hell!
+  #_(when-let [error (m/explain spec.bp/Blueprint blueprint)]
+    (throw (ex-info "Wrong Blueprint in sub-flow method!"
+                    {:event ::wrong-sub-flow-blueprint-error
+                     :error-explain error})))
+  (apply-blueprint blueprint))
+
+
+(defmethod sub-flow :function
+  [_ f & args]
+  (let [blueprint (apply f args)]
+    (sub-flow nil blueprint)))
 
 
 (defonce flows-data (atom {}))
@@ -192,19 +217,23 @@
 (defn flow
   ([name data-from-flow blueprint] (flow name data-from-flow nil blueprint))
   ([name data-from-flow handler blueprint]
-   (let [{:keys [datoms dummies]} (if (some? data-from-flow) (data-from-flow @flows-data) {})
-         to-transact (mapv #(-> % seq (conj :db/add) vec) datoms)]
-     (testing name
-       (sys/startup! (when (symbol? handler) {:handler/main handler}))
-       (dum/restore dummies)
-       (let [final-datoms
-             (do
-               (d/transact! (app/db-conn) to-transact)
-               (apply-blueprint blueprint)
-               (d/datoms (d/db (app/db-conn)) :eav))
-             final-dummies (dum/dump-all)]
-         (dum/clear-all)
-         (sys/shutdown!)
-         (swap! flows-data assoc (-> name (str/replace #" " "-") str/lower-case keyword)
-                {:datoms (negate-db-ids final-datoms)
-                 :dummies final-dummies}))))))
+   (try
+     (let [{:keys [datoms dummies]} (if (some? data-from-flow) (data-from-flow @flows-data) {})
+           to-transact (mapv #(-> % seq (conj :db/add) vec) datoms)]
+       (testing name
+         (sys/startup! (when (symbol? handler) {:handler/main handler}))
+         (dum/restore dummies)
+         (let [final-datoms
+               (do
+                 (d/transact! (app/db-conn) to-transact)
+                 (apply-blueprint blueprint)
+                 (d/datoms (d/db (app/db-conn)) :eav))
+               final-dummies (dum/dump-all)]
+           (dum/clear-all)
+           (sys/shutdown!)
+           (swap! flows-data assoc (-> name (str/replace #" " "-") str/lower-case keyword)
+                  {:datoms (negate-db-ids final-datoms)
+                   :dummies final-dummies}))))
+     (catch Exception ex
+       (handle-error ex)
+       (throw ex)))))

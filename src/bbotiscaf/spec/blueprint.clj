@@ -4,19 +4,36 @@
     [bbotiscaf.spec.telegram :as spec.tg]))
 
 
-(def SendTextBlueprintEntry
+(defn is-ns-kw?
+  [x]
+  (and (keyword? x) (some? (namespace x))))
+
+
+(def SendTextBlueprintEntryArgs
   [:cat
-   :string
+   :any
    [:? [:vector spec.tg/MessageEntity]]])
 
 
-(def ClickBtnBlueprintEntry
+(def SendTextBlueprintEntry
+  [:cat
+   [:fn is-ns-kw?]
+   SendTextBlueprintEntryArgs])
+
+
+(def ClickBtnBlueprintEntryArgs
   [:cat
    [:? [:maybe [:int {:min 1}]]]
    [:or :string Regexp]])
 
 
-(def CheckMessageBlueprintEntry
+(def ClickBtnBlueprintEntry
+  [:cat
+   [:fn is-ns-kw?]
+   ClickBtnBlueprintEntryArgs])
+
+
+(def CheckMessageBlueprintEntryArgs
   [:cat
    [:? [:maybe [:int {:min 1}]]]
    [:? :string]
@@ -25,18 +42,25 @@
    [:? [:vector [:vector [:or :string Regexp]]]]])
 
 
-(defn is-ns-kw?
-  [x]
-  (and (keyword? x) (some? (namespace x))))
+(def CheckMessageBlueprintEntry
+  [:cat
+   [:fn is-ns-kw?]
+   CheckMessageBlueprintEntryArgs])
+
+
+(def BlueprintEntryArgs
+  [:or
+   SendTextBlueprintEntryArgs
+   ClickBtnBlueprintEntryArgs
+   CheckMessageBlueprintEntryArgs])
 
 
 (def BlueprintEntry
-  [:cat
-   [:fn is-ns-kw?]
-   [:or
-    SendTextBlueprintEntry
-    ClickBtnBlueprintEntry
-    CheckMessageBlueprintEntry]])
+  [:or
+   SendTextBlueprintEntry
+   ClickBtnBlueprintEntry
+   CheckMessageBlueprintEntry])
 
 (def Blueprint
-  [:* BlueprintEntry])
+  [:cat
+   [:* BlueprintEntry]])
