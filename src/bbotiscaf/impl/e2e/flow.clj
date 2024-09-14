@@ -132,6 +132,28 @@
         (-check-message msg arg)))))
 
 
+(defonce ^:private vars (atom {}))
+
+
+(defn- save-var-from-message
+  [dummy & args]
+  (let [[num args] (if (-> args first pos-int?) [(first args) (rest args)] [nil args])
+        msg (get-message dummy num)]
+    (swap! vars assoc (first args) (cond->> msg
+                                     (contains? msg :caption) :caption
+                                     (contains? msg :text) :text
+                                     true (re-find (second args))
+                                     true second))))
+
+
+(defn- check-vars
+  [_ f k1 k2]
+  (let [v1 (k1 @vars)
+        v2 (k2 @vars)]
+    (testing (format "%s of %s (%s) and %s (%s)" f k1 v1 k2 v2)
+      (is (f v1 v2)))))
+
+
 (defn check-no-temp-messages
   [dummy]
   (let [m-msg (get-message dummy nil)
