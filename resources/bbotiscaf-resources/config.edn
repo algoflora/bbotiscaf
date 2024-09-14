@@ -6,4 +6,6 @@
 
  :bot/default-language-code :en
 
- :bot/roles {}}
+ :bot/roles {}
+
+ :logging/level :info}

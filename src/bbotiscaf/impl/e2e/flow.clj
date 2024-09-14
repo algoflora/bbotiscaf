@@ -176,10 +176,10 @@
        (sys/startup! (when (symbol? handler) {:handler/main handler}))
        (dum/restore dummies)
        (let [final-datoms
-             (binding [*dtlv* (app/db-conn)]
-               (d/transact! *dtlv* to-transact)
+             (do
+               (d/transact! (app/db-conn) to-transact)
                (apply-blueprint blueprint)
-               (d/datoms (dtlv) :eav))
+               (d/datoms (d/db (app/db-conn)) :eav))
              final-dummies (dum/dump-all)]
          (dum/clear-all)
          (sys/shutdown!)

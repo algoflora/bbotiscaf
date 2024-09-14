@@ -7,7 +7,6 @@
     [bbotiscaf.misc :refer [read-resource-dir]]
     [clojure.edn :as edn]
     [clojure.java.io :as io]
-    [clojure.walk :refer [postwalk]]
     [integrant.core :as ig]
     [malli.instrument :as mi]
     [taoensso.timbre :as log]))
@@ -108,6 +107,12 @@
              "Applying :handler/main %s..." handler
              {:handler handler})
   handler)
+
+
+(defmethod ig/init-key :logging/level
+  [_ level]
+  (log/merge-config! {:min-level level})
+  level)
 
 
 (defn startup!
