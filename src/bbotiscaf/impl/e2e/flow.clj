@@ -131,7 +131,7 @@
         (-check-message msg arg)))))
 
 
-(defonce ^:private vars (atom {}))
+(defonce vars (atom {}))
 
 
 (defn- save-var-from-message
