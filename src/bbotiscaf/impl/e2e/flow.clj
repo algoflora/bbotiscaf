@@ -201,6 +201,11 @@
     (sub-flow nil blueprint)))
 
 
+(defn- call!
+  [_ f & args]
+  (apply f args))
+
+
 (defonce flows-data (atom {}))
 
 
