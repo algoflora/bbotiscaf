@@ -3,7 +3,6 @@
     [babashka.fs :as fs]
     [clojure.edn :as edn]
     [clojure.java.io :as io]
-    [clojure.walk :refer [postwalk]]
     [malli.core :as m]))
 
 
@@ -68,3 +67,11 @@
   `(let [t0 (system-time)]
      ~@body
      (- (system-time) t0)))
+
+
+(defmacro do-nanos*
+  [& body]
+  `(let [t0 (system-time)
+         r (do ~@body)]
+     {:result r
+      :nanos (- (system-time) t0)}))
