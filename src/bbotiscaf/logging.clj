@@ -38,7 +38,10 @@
       (and (= cnt (+ 3 (count (re-seq #"(?<!%)%(\.\d+)?[sdfx]" arg2))))
            (map? argn))
       (merge {:event-name arg1
-              :message-text (apply format (rest vargs))}
+              :message-text (let [text (apply format (rest vargs))]
+			      (if (< 256 (count text))
+				(str (subs text 0 253) "...")
+				text))}
              argn)
 
       :else (throw (ex-info "Bad log arguments!" {:log-arguments vargs})))))
@@ -53,18 +56,18 @@
    :fn         (fn [{:keys [level ?err vargs ?ns-str
                             ?file hostname_ timestamp_ ?line]}]
                  (let [data (process-vargs vargs)]
-                   (println (format "%s [%s] <%s:%s:%s> - %s%s"
+		   (println (format "%s [%s] <%s:%s:%s> - %s%s"
                                     @timestamp_
                                     (-> level name str/upper-case)
                                     @hostname_
                                     (or ?ns-str ?file "?")
                                     (or ?line "?")
                                     (if (not-empty (:message-text data))
-                                      (:message-text data)
-                                      (str (:event-name data)))
+				      (:message-text data)
+				      (str (:event-name data)))
                                     (if ?err
-                                      (str "\n" (with-out-str (st/print-stack-trace ?err)))
-                                      "")))))})
+				      (str "\n" (with-out-str (st/print-stack-trace ?err)))
+				      "")))))})
 
 
 (defn- check-json

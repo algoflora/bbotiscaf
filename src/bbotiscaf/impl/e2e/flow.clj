@@ -53,6 +53,10 @@
 (defn- send-text
   ([dummy text] (send-text dummy text []))
   ([dummy text entities]
+   (log/debug ::dummy-send-text
+              "Dummy %s sendindg message: %s" (-> dummy :username keyword) text
+              {:dummy dummy
+               :text text})
    (cl/send-text dummy (str text) entities)))
 
 
@@ -63,6 +67,12 @@
   ([dummy btn-re] (click-btn dummy nil btn-re))
   ([dummy num? btn-re]
    (let [msg (get-message dummy num?)]
+     (log/debug ::dummy-click-btn
+                "Dummy %s clicking button '%s' in message '%s'"
+                (-> dummy :username keyword) (str btn-re) (or (:text msg) (:caption msg))
+                {:dummy dummy
+                 :button btn-re
+                 :message msg})
      (cl/click-btn dummy msg (str?->re btn-re)))))
 
 
@@ -204,6 +214,11 @@
 (defn- call!
   [_ f & args]
   (apply f args))
+
+
+(defn- println!
+  [_ text]
+  (println text))
 
 
 (defonce flows-data (atom {}))
