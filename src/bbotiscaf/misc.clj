@@ -75,3 +75,20 @@
          r (do ~@body)]
      {:result r
       :nanos (- (system-time) t0)}))
+
+
+(defn- char-range
+  [lo hi]
+  (range (int lo) (inc (int hi))))
+
+
+(def alpha-numeric
+  (map char (concat (char-range \a \z)
+                    (char-range \A \Z)
+                    (char-range \0 \9))))
+
+
+(defn generate-random-alpha-numeric
+  ([] (generate-random-alpha-numeric 32))
+  ([num]
+   (apply str (take num (repeatedly #(rand-nth alpha-numeric))))))
