@@ -8,4 +8,4 @@
 
  :bot/roles {}
 
- :logging/level :info}
+ :logging/level :debug}

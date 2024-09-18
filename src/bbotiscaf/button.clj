@@ -40,8 +40,9 @@
 
 
 (defn home-btn
-  [text]
-  (->HomeButton text))
+  ([] (home-btn nil))
+  ([text]
+   (->HomeButton text)))
 
 
 (defrecord PayButton

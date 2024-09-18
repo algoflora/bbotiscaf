@@ -1,8 +1,10 @@
 (ns bbotiscaf.core
   (:require
     [actions]
+    [bbotiscaf.dynamic :refer [*dtlv*]]
     [bbotiscaf.impl.handler :as h]
     [bbotiscaf.impl.system :as sys]
+    [bbotiscaf.impl.system.app :as app]
     [bbotiscaf.logging :as logging]
     [bbotiscaf.spec.action :as spec.act]
     [bbotiscaf.spec.aws :as spec.aws]
@@ -11,6 +13,9 @@
     [cheshire.core :as json]
     [malli.core :as m]
     [taoensso.timbre :as log]))
+
+
+(require '[pod.huahaiy.datalevin :as d])
 
 
 (m/=> handle-action [:-> spec.act/ActionRequest :nil])
@@ -32,12 +37,14 @@
 
 (defn- handler
   [req]
-  (cond
-    (m/validate spec.tg/Update req)
-    (h/handle-update req)
+  (d/with-transaction [conn (app/db-conn)]
+                      (binding [*dtlv* conn]
+                        (cond
+                          (m/validate spec.tg/Update req)
+                          (h/handle-update req)
 
-    (m/validate spec.act/ActionRequest req)
-    (handle-action req)))
+                          (m/validate spec.act/ActionRequest req)
+                          (handle-action req)))))
 
 
 (m/=> log-and-prepare [:-> spec.aws/SQSRecordSchema spec/Request])
