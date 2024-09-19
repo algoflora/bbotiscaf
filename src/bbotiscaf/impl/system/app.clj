@@ -23,6 +23,11 @@
   (reset! app data))
 
 
+(defn update-project-config
+  [f]
+  (swap! app update :project/config f))
+
+
 (defn clear-app!
   []
   (reset! app nil))
@@ -40,6 +45,11 @@
 (def default-language-code (delay (:bot/default-language-code @app)))
 
 (def api-fn (delay (:api/fn @app)))
+
+
+(defn project-config
+  []
+  (:project/config @app))
 
 
 (defn handler-main

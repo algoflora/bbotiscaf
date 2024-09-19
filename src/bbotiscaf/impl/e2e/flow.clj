@@ -252,13 +252,22 @@
       (throw ex))))
 
 
+(defonce flows (atom {}))
+
+
+(defmacro defflow
+  [key blueprint]
+  {:style/indent [1]}
+  `(swap! flows assoc ~key ~blueprint))
+
+
 (defmacro flow-pipeline
   {:style/indent [1]
    :clj-kondo/lint-as 'clojure.core/def}
   [name & args]
   (let [[h arg] (if (= 2 (count args)) [(first args) (second args)] [nil (first  args)])]
     `(clojure.test/deftest ~name
-       (let [~'blueprint (vec (apply concat ~arg))]
+       (let [~'blueprint (vec (apply concat (mapv #(% @flows) ~arg)))]
          (with-redefs [bbotiscaf.impl.system.app/handler-main
                        (if (some? ~h) (fn [] ~h) bbotiscaf.impl.system.app/handler-main)]
            (flow ~'blueprint))))))

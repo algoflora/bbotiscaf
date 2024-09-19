@@ -116,6 +116,11 @@
     lvl))
 
 
+(defmethod ig/init-key :project/config
+  [_ config]
+  config)
+
+
 (defn startup!
   ([] (startup! {}))
   ([conf]
