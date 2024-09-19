@@ -99,8 +99,8 @@
 
 (defmethod -check-message clojure.lang.PersistentVector
   [msg exp]
-  (testing "buttons"
-    (let [kbd (-> msg :reply_markup :inline_keyboard)]
+  (let [kbd (-> msg :reply_markup :inline_keyboard)]
+    (testing (str "buttons: " exp "in " kbd "\n")
       (is (= (count exp) (count kbd)) "Different rows count!")
       (doseq [[row-idx row] (map-indexed vector exp)]
         (is (= (count (get exp row-idx)) (count row))
@@ -175,21 +175,24 @@
 
 
 (defn- apply-blueprint
-  [blueprint]
-  (when (not-empty blueprint)
-    (let [key   (-> blueprint first namespace keyword)
-          dummy (cond
-                  (dum/exists? key) (-> key dum/get-by-key :dummy)
+  ([blueprint] (apply-blueprint blueprint 1))
+  ([blueprint line]
+   (when (not-empty blueprint)
+     (let [key   (-> blueprint first namespace keyword)
+           dummy (cond
+                   (dum/exists? key) (-> key dum/get-by-key :dummy)
 
-                  (= (-> key name (str/split #"\.") first)
-                     (-> (app/handler-main) namespace (str/split #"\.") first))
-                  nil
+                   (= (-> key name (str/split #"\.") first)
+                      (-> (app/handler-main) namespace (str/split #"\.") first))
+                   nil
 
-                  :else (-> key dum/new :dummy))
-          func  (->> blueprint first name (symbol "bbotiscaf.impl.e2e.flow") find-var)
-          args  (->> blueprint rest (take-while #(not (spec.bp/is-ns-kw? %))))]
-      (apply func dummy args)
-      (apply-blueprint (drop (+ 1 (count args)) blueprint)))))
+                   :else (-> key dum/new :dummy))
+           symb  (-> blueprint first name)
+           func  (find-var (symbol "bbotiscaf.impl.e2e.flow" symb))
+           args  (->> blueprint rest (take-while #(not (spec.bp/is-ns-kw? %))))]
+       (testing (format "%4d | <%s/%s %s>\n" line key symb (str/join " " args))
+         (apply func dummy args))
+       (apply-blueprint (drop (+ 1 (count args)) blueprint) (inc line))))))
 
 
 (defmulti ^:private sub-flow (fn [_ x & _] (cond (fn? x) :function (vector? x) :vector)))
@@ -211,6 +214,22 @@
     (sub-flow nil blueprint)))
 
 
+(defn- check-and-close-only-temp
+  [dummy & args]
+  (let [ns (:username dummy)]
+    (sub-flow dummy
+              (vec (concat [(keyword ns "check-msg") 1] args
+                           [(keyword ns "click-btn") 1 "✖️" (keyword ns "check-no-temp-messages")])))))
+
+
+(defn- check-and-close-last-temp
+  [dummy & args]
+  (let [ns (:username dummy)]
+    (sub-flow dummy
+              (vec (concat [(keyword ns "check-msg") 1] args
+                           [(keyword ns "click-btn") 1 "✖️"])))))
+
+
 (defn- call!
   [_ f & args]
   (apply f args))
@@ -221,39 +240,34 @@
   (println text))
 
 
-(defonce flows-data (atom {}))
+(defn- flow
+  [blueprint]
+  (try
+    (sys/startup!)
+    (apply-blueprint blueprint)
+    (dum/clear-all)
+    (sys/shutdown!)
+    (catch Exception ex
+      (handle-error ex)
+      (throw ex))))
 
 
-(defn- negate-db-ids
-  [data]
-  (let [res (postwalk #(if (and (map? %) (contains? % :db/id))
-                         (if (= 1 (count %))
-                           (- (:db/id %))
-                           (assoc % :db/id (- (:db/id %)))) %)
-                      data)]
-    res))
+(defonce flows (atom {}))
 
 
-(defn flow
-  ([name data-from-flow blueprint] (flow name data-from-flow nil blueprint))
-  ([name data-from-flow handler blueprint]
-   (try
-     (let [{:keys [datoms dummies]} (if (some? data-from-flow) (data-from-flow @flows-data) {})
-           to-transact (mapv #(-> % seq (conj :db/add) vec) datoms)]
-       (testing name
-         (sys/startup! (when (symbol? handler) {:handler/main handler}))
-         (dum/restore dummies)
-         (let [final-datoms
-               (do
-                 (d/transact! (app/db-conn) to-transact)
-                 (apply-blueprint blueprint)
-                 (d/datoms (d/db (app/db-conn)) :eav))
-               final-dummies (dum/dump-all)]
-           (dum/clear-all)
-           (sys/shutdown!)
-           (swap! flows-data assoc (-> name (str/replace #" " "-") str/lower-case keyword)
-                  {:datoms (negate-db-ids final-datoms)
-                   :dummies final-dummies}))))
-     (catch Exception ex
-       (handle-error ex)
-       (throw ex)))))
+(defmacro defflow
+  [key blueprint]
+  {:style/indent [1]}
+  `(swap! flows assoc ~key ~blueprint))
+
+
+(defmacro flow-pipeline
+  {:style/indent [1]
+   :clj-kondo/lint-as 'clojure.core/def}
+  [name & args]
+  (let [[h arg] (if (= 2 (count args)) [(first args) (second args)] [nil (first  args)])]
+    `(clojure.test/deftest ~name
+       (let [~'blueprint (vec (apply concat (mapv #(% @flows) ~arg)))]
+         (with-redefs [bbotiscaf.impl.system.app/handler-main
+                       (if (some? ~h) (fn [] ~h) bbotiscaf.impl.system.app/handler-main)]
+           (flow ~'blueprint))))))

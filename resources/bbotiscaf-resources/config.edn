@@ -8,4 +8,6 @@
 
  :bot/roles {}
 
- :logging/level :info}
+ :logging/level :info
+
+ :project/config {}}

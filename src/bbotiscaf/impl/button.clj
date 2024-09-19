@@ -31,9 +31,13 @@
 
   b/HomeButton
   (to-map [this user]
-    {:text (:text this)
-     :callback_data
-     (str (clb/set-callback user (symbol (app/handler-main)) {}))})
+    (let [text (cond
+		 (nil? (:text this))    (txt [:home])
+		 (vector? (:text this)) (txt (:text this))
+		 :else                  (:text this))]
+      {:text text
+       :callback_data
+       (str (clb/set-callback user (symbol (app/handler-main)) {}))}))
 
   b/PayButton
   (to-map [this _]

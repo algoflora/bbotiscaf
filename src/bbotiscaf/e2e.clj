@@ -3,11 +3,14 @@
     [bbotiscaf.impl.e2e.flow :as impl]))
 
 
-(defn get-flow-var
-  [k]
-  (k @impl/vars))
+(defmacro defflow
+  {:style/indent [1]}
+  [& args]
+  `(impl/defflow ~@args))
 
 
-(defn flow
-  [flow-name ?data-from-flow blueprint]
-  (impl/flow flow-name ?data-from-flow blueprint))
+(defmacro flow-pipeline
+  {:style/indent [1]
+   :clj-kondo/lint-as 'clojure.core/def}
+  [& args]
+  `(impl/flow-pipeline ~@args))

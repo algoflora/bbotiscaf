@@ -8,7 +8,8 @@
    [:db/conn [:maybe :string]]
    [:bot/default-language-code :keyword]
    [:bot/roles [:map-of :keyword [:vector [:or :int :string :keyword]]]]
-   [:logging/level :keyword]])
+   [:logging/level :keyword]
+   [:project/config :map]])
 
 
 (def Project-Config
@@ -19,7 +20,8 @@
    [:bot/roles {:optional true} [:map-of :keyword [:vector [:or :int :string :keyword]]]]
    [:handler/namespaces [:vector :symbol]]
    [:handler/main :symbol]
-   [:logging/level {:optional true} :keyword]])
+   [:logging/level {:optional true} :keyword]
+   [:project/config {:optional true} :map]])
 
 
 (def Config
@@ -32,4 +34,5 @@
    [:bot/roles [:map-of :keyword [:vector [:or :int :string :keyword]]]]
    [:handler/namespaces [:vector :symbol]]
    [:handler/main :symbol]
-   [:logging/level :keyword]])
+   [:logging/level :keyword]
+   [:project/config :map]])

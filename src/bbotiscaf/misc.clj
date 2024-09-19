@@ -82,13 +82,36 @@
   (range (int lo) (inc (int hi))))
 
 
+(def hex
+  (map char (concat (char-range \a \f)
+                    (char-range \0 \9))))
+
+
 (def alpha-numeric
   (map char (concat (char-range \a \z)
                     (char-range \A \Z)
                     (char-range \0 \9))))
 
 
-(defn generate-random-alpha-numeric
-  ([] (generate-random-alpha-numeric 32))
-  ([num]
-   (apply str (take num (repeatedly #(rand-nth alpha-numeric))))))
+(defn- create-generator
+  [chars]
+  (fn [num]
+    (apply str (take num (repeatedly #(rand-nth chars))))))
+
+
+(defn generate-hex
+  [num]
+  ((create-generator hex) num))
+
+
+(defn generate-alpha-numeric
+  [num]
+  ((create-generator alpha-numeric) num))
+
+
+(defn user->str
+  [user]
+  (let [username (:user/username user)]
+    (if username
+      (str "@" username)
+      (str "id" (:user/id user)))))

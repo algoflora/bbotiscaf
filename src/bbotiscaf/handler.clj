@@ -1,6 +1,10 @@
 (ns bbotiscaf.handler
-  (:require [bbotiscaf.api :as api]
-            [bbotiscaf.dynamic :refer [*user* *msg*]]))
+  (:require
+    [bbotiscaf.api :as api]
+    [bbotiscaf.dynamic :refer [*user* *msg*]]
+    [bbotiscaf.impl.callback :as clb]
+    [bbotiscaf.impl.system.app :as app]))
+
 
 (defn delete-this-message
 
@@ -12,13 +16,24 @@
   [_]
   (api/delete-message *user* *msg*))
 
+
 (defn main
 
   "Core handler of system. Must be overriden in project."
 
   [_]
   (api/send-message *user*
-                "Hello from Bbotiscaf Framework!" []))
+                    "Hello from Bbotiscaf Framework!" []))
+
+
+(defn delete-and-home
+
+  "Handler to delete message. Deletes the message with was called from. Cleanups callbacks. Afterwards run `main` handler"
+
+  [_]
+  (api/delete-message *user* *msg*)
+  (clb/call-func (app/handler-main) {}))
+
 
 (defn payment
 
