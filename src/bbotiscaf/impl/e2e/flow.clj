@@ -99,8 +99,8 @@
 
 (defmethod -check-message clojure.lang.PersistentVector
   [msg exp]
-  (testing (str "buttons: " exp "\n")
-    (let [kbd (-> msg :reply_markup :inline_keyboard)]
+  (let [kbd (-> msg :reply_markup :inline_keyboard)]
+    (testing (str "buttons: " exp "in " kbd "\n")
       (is (= (count exp) (count kbd)) "Different rows count!")
       (doseq [[row-idx row] (map-indexed vector exp)]
         (is (= (count (get exp row-idx)) (count row))
@@ -190,7 +190,6 @@
            symb  (-> blueprint first name)
            func  (find-var (symbol "bbotiscaf.impl.e2e.flow" symb))
            args  (->> blueprint rest (take-while #(not (spec.bp/is-ns-kw? %))))]
-       (println (format "%4d | <%s/%s %s>\n" line key symb (str/join " " args)))
        (testing (format "%4d | <%s/%s %s>\n" line key symb (str/join " " args))
          (apply func dummy args))
        (apply-blueprint (drop (+ 1 (count args)) blueprint) (inc line))))))
@@ -254,8 +253,8 @@
 
 
 (defmacro flow-pipeline
-  {:style/indent [1 :form :form]
-   :clj-kondo/lint-as 'clojure.test/deftest}
+  {:style/indent [1]
+   :clj-kondo/lint-as 'clojure.core/def}
   [name & args]
   (let [[h arg] (if (= 2 (count args)) [(first args) (second args)] [nil (first  args)])]
     `(clojure.test/deftest ~name

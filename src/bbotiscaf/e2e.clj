@@ -4,7 +4,7 @@
 
 
 (defmacro flow-pipeline
-  {:style/indent [1 :form :form]
-   :clj-kondo/lint-as 'clojure.test/deftest}
+  {:style/indent [1]
+   :clj-kondo/lint-as 'clojure.core/def}
   [& args]
   `(impl/flow-pipeline ~@args))

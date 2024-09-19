@@ -3,6 +3,7 @@
     [bbotiscaf.dynamic :refer [*user* *upd* *msg*]]
     [bbotiscaf.impl.api :as api]
     [bbotiscaf.impl.callback :as clb]
+    [bbotiscaf.impl.errors :refer [handle-error]]
     [bbotiscaf.impl.user :as u]
     [bbotiscaf.misc :refer [validate!]]
     [bbotiscaf.spec.telegram :as spec.tg]
@@ -22,7 +23,10 @@
   [type update]
   (binding [*user* (u/load-or-create (get-in update [type :from]))
             *upd*  update]
-    (handle type (type update))))
+    (try
+      (handle type (type update))
+      (catch Exception ex
+        (handle-error (Thread/currentThread) ex)))))
 
 
 (m/=> handle-update [:-> spec.tg/Update :nil])

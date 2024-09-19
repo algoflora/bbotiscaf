@@ -58,3 +58,18 @@
   [_]
   (let [text (if (u/has-role? :admin) "Hello, sir" "Hi")]
     (api/send-message *user* text [])))
+
+
+(defn error
+  [_]
+  (api/send-message *user* "Hello World!" [[(b/text-btn "Button" 'bbotiscaf.e2e-test.handler/error-button)]]))
+
+
+(defn error-button
+  [_]
+  (api/send-message *user* "Click Error" [[(b/text-btn "Error" 'bbotiscaf.e2e-test.handler/error-expression)]]))
+
+
+(defn error-expression
+  [_]
+  (/ 1 0))

@@ -56,6 +56,19 @@
    :admin/check-msg "Hello, sir"])
 
 
+(def error
+  [:user/send-text "/start"
+   :user/check-msg "Hello World!" [["Button"]]
+   :user/click-btn "Button"
+   :user/check-msg "Click Error" [["Error"]]
+   :user/click-btn "Error"
+   ;; ::call! #(Thread/sleep 1000)
+   :user/check-msg 1 "⚠️ Unexpected ERROR! ⚠️" [["To Main Menu"] ["✖️"]]
+   :user/click-btn 1 "To Main Menu"
+   :user/check-no-temp-messages
+   :user/check-msg "Hello World!" [["Button"]]])
+
+
 (flow-pipeline Core
                [main-message temp-message])
 
@@ -68,3 +81,8 @@
 (flow-pipeline Roles
                'bbotiscaf.e2e-test.handler/roled
                [roles])
+
+
+(flow-pipeline Error
+               'bbotiscaf.e2e-test.handler/error
+               [error])

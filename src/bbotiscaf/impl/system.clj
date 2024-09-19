@@ -111,8 +111,9 @@
 
 (defmethod ig/init-key :logging/level
   [_ level]
-  (log/merge-config! {:min-level level})
-  level)
+  (let [lvl (if (some #{"--debug"} *command-line-args*) :debug level)]
+    (log/merge-config! {:min-level lvl})
+    lvl))
 
 
 (defn startup!

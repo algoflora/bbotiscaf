@@ -149,6 +149,11 @@
             [:=> [:cat :uuid :map] :nil]])
 
 
+(defn call-func
+  [func args]
+  ((find-var func) args))
+
+
 (defn call
   ([uuid] (call uuid {}))
   ([uuid args]
@@ -158,4 +163,4 @@
          args (merge (:callback/arguments callback) args)]
      (when-not (true? (:callback/is-service callback))
        (check-handler! *user*))
-     ((find-var func) args))))
+     (call-func func args))))
