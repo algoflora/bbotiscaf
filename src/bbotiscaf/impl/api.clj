@@ -214,10 +214,12 @@
                "Message sent to chat: %s" (:text body)
                {:user user
                 :body body
-                :options options})
+                :options options
+                :response new-msg})
     (when (and (not (:temp options)) (not= new-msg-id (:msg-id user)))
       (u/set-msg-id user new-msg-id))
-    (set-callbacks-message-id user new-msg)))
+    (set-callbacks-message-id user new-msg)
+    new-msg-id))
 
 
 (defmulti process-args (fn [& args] (first args)))
@@ -243,7 +245,7 @@
                   [:? spec/Buttons]
                   [:? :int]
                   [:* :keyword]]
-             :nil])
+             :int])
 
 
 (defn send!

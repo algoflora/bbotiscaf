@@ -144,14 +144,17 @@
       (set-callback user main-handler nil false (:user/uuid user)))))
 
 
-(m/=> call [:function
-            [:=> [:cat :uuid] :nil]
-            [:=> [:cat :uuid :map] :nil]])
+(m/=> call-func [:=> [:cat :symbol :map] :any])
 
 
 (defn call-func
   [func args]
   ((find-var func) args))
+
+
+(m/=> call [:function
+            [:=> [:cat :uuid] :any]
+            [:=> [:cat :uuid :map] :any]])
 
 
 (defn call

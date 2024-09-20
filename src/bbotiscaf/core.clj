@@ -18,7 +18,7 @@
 (require '[pod.huahaiy.datalevin :as d])
 
 
-(m/=> handle-action [:-> spec.act/ActionRequest :nil])
+(m/=> handle-action [:-> spec.act/ActionRequest :any])
 
 
 (defn- handle-action
@@ -32,7 +32,7 @@
     (throw (ex-info "Wrong action type!" {:action-type type}))))
 
 
-(m/=> handler [:-> spec/Request :nil])
+(m/=> handler [:-> spec/Request :any])
 
 
 (defn- handler
@@ -66,7 +66,7 @@
 
 (m/=> sqs-receiver [:=> [:cat
                          spec.aws/SQSRecordsBunch
-                         spec.aws/SQSContext] :nil])
+                         spec.aws/SQSContext] :any])
 
 
 (defn sqs-receiver
