@@ -4,11 +4,6 @@
     [bbotiscaf.spec.telegram :as spec.tg]))
 
 
-(defn is-ns-kw?
-  [x]
-  (and (keyword? x) (some? (namespace x))))
-
-
 (def SendTextBlueprintEntryArgs
   [:cat
    :any
@@ -17,7 +12,7 @@
 
 (def SendTextBlueprintEntry
   [:cat
-   [:fn is-ns-kw?]
+   [:fn qualified-keyword?]
    SendTextBlueprintEntryArgs])
 
 
@@ -29,7 +24,7 @@
 
 (def ClickBtnBlueprintEntry
   [:cat
-   [:fn is-ns-kw?]
+   [:fn qualified-keyword?]
    ClickBtnBlueprintEntryArgs])
 
 
@@ -44,7 +39,7 @@
 
 (def CheckMessageBlueprintEntry
   [:cat
-   [:fn is-ns-kw?]
+   [:fn qualified-keyword?]
    CheckMessageBlueprintEntryArgs])
 
 
@@ -60,6 +55,7 @@
    SendTextBlueprintEntry
    ClickBtnBlueprintEntry
    CheckMessageBlueprintEntry])
+
 
 (def Blueprint
   [:cat

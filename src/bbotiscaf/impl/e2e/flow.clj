@@ -189,7 +189,7 @@
                    :else (-> key dum/new :dummy))
            symb  (-> blueprint first name)
            func  (find-var (symbol "bbotiscaf.impl.e2e.flow" symb))
-           args  (->> blueprint rest (take-while #(not (spec.bp/is-ns-kw? %))))]
+           args  (->> blueprint rest (take-while #(not (qualified-keyword? %))))]
        (testing (format "%4d | <%s/%s %s>\n" line key symb (str/join " " args))
          (apply func dummy args))
        (apply-blueprint (drop (+ 1 (count args)) blueprint) (inc line))))))
