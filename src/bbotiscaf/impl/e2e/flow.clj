@@ -111,22 +111,11 @@
             (is (some? (re-find re (:text btn))))))))))
 
 
-(defn- -check-message-entities
+(defmethod -check-message clojure.lang.PersistentHashSet
   [msg exp]
-  (testing "text or caption entities"
-    (let [exp (vec exp)]
-      (is (or (= exp (:entities msg))
-              (= exp (:caption_entities msg)))))))
-
-
-(defmethod -check-message clojure.lang.PersistentList
-  [msg exp]
-  (-check-message-entities msg exp))
-
-
-(defmethod -check-message clojure.lang.PersistentList$EmptyList
-  [msg exp]
-  (-check-message-entities msg exp))
+  (testing (format "text or caption entities %s %s" (:entities msg) exp)
+    (is (or (= exp (set (:entities msg)))
+            (= exp (set (:caption_entities msg)))))))
 
 
 (m/=> check-msg [:=> [:cat spec.tg/User spec.bp/CheckMessageBlueprintEntryArgs] :nil])

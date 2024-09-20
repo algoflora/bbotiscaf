@@ -1,5 +1,6 @@
 (ns bbotiscaf.spec.core
   (:require
+    [bbotiscaf.button :as b]
     [bbotiscaf.spec.action :as spec.act]
     [bbotiscaf.spec.telegram :as spec.tg]))
 
@@ -20,3 +21,9 @@
    [:lambda-env-vars {:optional true} [:vector {:min 0} :string]]
    [:datalevin-version {:optional true} :string]
    [:tfstate-bucket {:optional true} :string]])
+
+
+(def Buttons
+  [:vector
+   [:vector
+    [:fn (fn [btn] (instance? b/KeyboardButton btn))]]])

@@ -5,17 +5,17 @@
 
 (defflow :users/main-message
   [:ivan/send-text "Ivan"
-   :ivan/check-msg "Hi, Ivan!" '() [[#"Go"] ["Temp"]]
+   :ivan/check-msg "Hi, Ivan!" #{} [[#"Go"] ["Temp"]]
    :mary/send-text "Mary"
    :mary/check-msg "Hi, Mary!" [["Go!"] ["Temp"]]
    :ivan/click-btn #"^Go"
    :mary/click-btn "Go"
-   :mary/check-msg "Go, Mary!" '() [["Home"]]
+   :mary/check-msg "Go, Mary!" #{} [["Home"]]
    :ivan/check-msg "Go, Ivan!" [["Home"]]
    :ivan/click-btn "Home"
    :mary/click-btn "Home"
    :ivan/check-msg "Hi, stranger!" [["Go"] ["Temp"]]
-   :mary/check-msg #"stranger" '() [["Go"] ["Temp"]]])
+   :mary/check-msg #"stranger" #{} [["Go"] ["Temp"]]])
 
 
 (defflow :users/temp-message

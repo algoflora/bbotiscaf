@@ -31,9 +31,8 @@
 (def CheckMessageBlueprintEntryArgs
   [:cat
    [:? [:maybe [:int {:min 1}]]]
-   [:? :string]
-   [:? Regexp]
-   [:? [:sequential spec.tg/MessageEntity]]
+   [:? [:or :string Regexp]]
+   [:? [:set spec.tg/MessageEntity]]
    [:? [:vector [:vector [:or :string Regexp]]]]])
 
 

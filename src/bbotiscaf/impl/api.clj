@@ -8,6 +8,7 @@
     [bbotiscaf.impl.system.app :as app]
     [bbotiscaf.impl.user :as u]
     [bbotiscaf.misc :as misc]
+    [bbotiscaf.spec.core :as spec]
     [bbotiscaf.spec.model :as spec.mdl]
     [bbotiscaf.spec.telegram :as spec.tg]
     [cheshire.core :refer [generate-string parse-string]]
@@ -24,10 +25,8 @@
                              :body (generate-string data)})
         resp (update raw :body #(try (parse-string % true)
                                      (catch Throwable _ %)))]
-    (log/debug ::telegram-api-request
-               "Telegram API request was sent")
     (log/info ::telegram-api-response
-              "Telegram api method %s reponse status %d" method (:status resp)
+              "Telegram api method %s response status %d" method (:status resp)
               {:method method
                :data data
                :response resp})
@@ -51,27 +50,11 @@
     (api-fn method data)))
 
 
-(defn- check-opt
-  [opts opt]
-  (boolean (some #{opt} opts)))
-
-
-(defn- prepare-options-map
-  [opts]
-  (let [to-edit-msg-id (->> opts (filter number?) (first))]
-    (-> {}
-        (assoc :temp           (or (check-opt opts :temp) (some? to-edit-msg-id)))
-        (assoc :markdown       (check-opt opts :markdown))
-        (assoc :to-edit-msg-id to-edit-msg-id))))
-
-
 (m/=> prepare-keyboard [:=>
                         [:cat
-                         [:maybe [:vector
-                                  [:vector
-                                   [:fn (fn [btn] (instance? b/KeyboardButton btn))]]]]
+                         [:maybe spec/Buttons]
                          spec.mdl/User
-                         [:or :map :nil]]
+                         :boolean]
                         [:map
                          [:inline_keyboard [:vector
                                             [:vector
@@ -79,11 +62,11 @@
 
 
 (defn prepare-keyboard
-  [kbd user optm]
+  [kbd user temp?]
   (when kbd
     {:inline_keyboard
      (cond-> (mapv (fn [btns] (mapv #(b/to-map % user) btns)) kbd)
-       (:temp optm) (conj [(b/to-map (ib/->XButton) user)]))}))
+       temp? (conj [(b/to-map (ib/->XButton) user)]))}))
 
 
 (defn- set-callbacks-message-id
@@ -98,144 +81,175 @@
 
 
 (defn- to-edit?
-  [optm user]
-  (when (and (some? (:msg-id user)) (= (:to-edit-msg-id optm) (:msg-id user)))
+  [options user]
+  (when (and (some? (:user/msg-id user)) (= (:message-id options) (:user/msg-id user)))
     (throw (ex-info "Manual editing of Main Message is forbidden!"
                     {:event ::manual-main-message-edit-error})))
-  (if (:temp optm)
-    (some? (:to-edit-msg-id optm))
-    (and (some? (:user/msg-id user))
-         (not= 0 (:user/msg-id user)))))
+  (if (:temp options)
+    (some? (:message-id options))
+    (pos-int? (:user/msg-id user))))
 
 
-(defn- prepare-arguments-map
-  [argm kbd optm user]
-  (cond-> argm
-    true                 (assoc :chat_id (:user/id user))
-    (some? kbd)          (assoc :reply_markup kbd)
-    (:markdown optm)     (assoc :parse_mode "Markdown")
-    (to-edit? optm user) (assoc :message_id (or (:to-edit-msg-id optm) (:user/msg-id user)))))
+(defn- prepare-body
+  [body options user]
+  (cond-> body
+    true                    (assoc :chat_id (:user/id user))
+    (:markdown options)     (assoc :parse_mode "Markdown")
+    (to-edit? options user) (assoc :message_id (or (:message-id options)
+                                                   (:user/msg-id user)))))
 
 
 (defmulti ^:private send-to-chat (fn [& args] (identity (first args))))
 
 
-(defn- create-media
-  [type data]
-  {:type (name type)
-   :caption (:caption data)
-   :media (:file data)})
+;; Media
+
+;; (defn- create-media
+;;   [type data]
+;;   {:type (name type)
+;;    :caption (:caption data)
+;;    :media (:file data)})
 
 
-(defn- prepare-to-multipart
-  [args-map]
-  (let [files     (atom {})
-        args-map# (walk/postwalk
-                    (fn [x]
-                      (cond (instance? java.io.File x)
-                            (let [file-id (keyword (str "fid" (java.util.UUID/randomUUID)))]
-                              (swap! files assoc file-id x)
-                              (str "attach://" (name file-id)))
-                            (number? x) (str x)
-                            :else x))
-                    (assoc args-map :content-type :multipart))]
-    (cond-> args-map#
-      (contains? args-map# :media)        (update :media generate-string)
-      (contains? args-map# :reply_markup) (update :reply_markup generate-string)
-      true (merge @files))))
+;; (defn- prepare-to-multipart
+;;   [args-map]
+;;   (let [files     (atom {})
+;;         args-map# (walk/postwalk
+;;                     (fn [x]
+;;                       (cond (instance? java.io.File x)
+;;                             (let [file-id (keyword (str "fid" (java.util.UUID/randomUUID)))]
+;;                               (swap! files assoc file-id x)
+;;                               (str "attach://" (name file-id)))
+;;                             (number? x) (str x)
+;;                             :else x))
+;;                     (assoc args-map :content-type :multipart))]
+;;     (cond-> args-map#
+;;       (contains? args-map# :media)        (update :media generate-string)
+;;       (contains? args-map# :reply_markup) (update :reply_markup generate-string)
+;;       true (merge @files))))
 
 
-(defn- send-new-media-to-chat
-  [type args-map media]
-  (let [media-is-file? (instance? java.io.File (:media media))
-        method         (keyword (str "send" (-> type name str/capitalize)))
-        args-map#      (cond-> (merge args-map media)
-                         true (dissoc :media)
-                         true (assoc type (:media media))
-                         media-is-file? (prepare-to-multipart))]
-    (api-wrap method args-map#)))
+;; (defn- send-new-media-to-chat
+;;   [type args-map media]
+;;   (let [media-is-file? (instance? java.io.File (:media media))
+;;         method         (keyword (str "send" (-> type name str/capitalize)))
+;;         args-map#      (cond-> (merge args-map media)
+;;                          true (dissoc :media)
+;;                          true (assoc type (:media media))
+;;                          media-is-file? (prepare-to-multipart))]
+;;     (api-wrap method args-map#)))
 
 
-(defn- edit-media-in-chat
-  [type args-map media]
-  (let [media-is-file? (instance? java.io.File (:media media))
-        args-map#      (cond-> args-map
-                         true (assoc :media media)
-                         media-is-file? (prepare-to-multipart))]
-    (try (api-wrap :editMessageMedia args-map#)
-         (catch clojure.lang.ExceptionInfo ex
-           (if (= 400 (-> ex ex-data :status))
-             (send-new-media-to-chat type args-map media)
-             (throw (ex-info "Request to :editMessageMedia failed!"
-                             {:event ::edit-message-media-error
-                              :args args-map#
-                              :error ex})))))))
+;; (defn- edit-media-in-chat
+;;   [type args-map media]
+;;   (let [media-is-file? (instance? java.io.File (:media media))
+;;         args-map#      (cond-> args-map
+;;                          true (assoc :media media)
+;;                          media-is-file? (prepare-to-multipart))]
+;;     (try (api-wrap :editMessageMedia args-map#)
+;;          (catch clojure.lang.ExceptionInfo ex
+;;            (if (= 400 (-> ex ex-data :status))
+;;              (send-new-media-to-chat type args-map media)
+;;              (throw (ex-info "Request to :editMessageMedia failed!"
+;;                              {:event ::edit-message-media-error
+;;                               :args args-map#
+;;                               :error ex})))))))
 
 
-(defn- send-media-to-chat
-  [type user data kbd optm]
-  (let [media    (create-media type data)
-        args-map (prepare-arguments-map {} kbd optm user)
-        new-msg  (if (to-edit? optm user)
-                   (edit-media-in-chat type args-map media)
-                   (send-new-media-to-chat type args-map media))]
-    (set-callbacks-message-id user new-msg)
-    new-msg))
+;; (defn- send-media-to-chat
+;;   [type user data kbd optm]
+;;   (let [media    (create-media type data)
+;;         args-map (prepare-body {:reply_markup kbd} optm user)
+;;         new-msg  (if (to-edit? optm user)
+;;                    (edit-media-in-chat type args-map media)
+;;                    (send-new-media-to-chat type args-map media))]
+;;     (set-callbacks-message-id user new-msg)
+;;     new-msg))
 
 
-(defmethod send-to-chat :photo
-  [& args]
-  (apply send-media-to-chat args))
+;; (defmethod send-to-chat :photo
+;;   [& args]
+;;   (apply send-media-to-chat args))
 
 
-(defmethod send-to-chat :document
-  [& args]
-  (apply send-media-to-chat args))
+;; (defmethod send-to-chat :document
+;;   [& args]
+;;   (apply send-media-to-chat args))
 
 
-(defmethod send-to-chat :invoice
-  [_ user data kbd optm]
-  (let [argm (prepare-arguments-map data kbd optm user)
-        new-msg (api-wrap 'send-invoice argm)]
-    (set-callbacks-message-id user new-msg)))
+;; (defmethod send-to-chat :invoice
+;;   [_ user data kbd optm]
+;;   (let [argm (prepare-body data kbd optm user)
+;;         new-msg (api-wrap 'send-invoice argm)]
+;;     (set-callbacks-message-id user new-msg)))
 
 
-(defn- send-message-to-chat
-  [argm to-edit??]
-  (let [func-kw (if to-edit?? :editMessageText :sendMessage)]
-    (try (api-wrap func-kw argm)
-         (catch clojure.lang.ExceptionInfo ex
-           (if (= 400 (-> ex ex-data :status))
-             (api-wrap :sendMessage argm)
-             (throw (ex-info "Request to :editMessageText failed!"
-                             {:event ::edit-message-text-error
-                              :args argm
-                              :error ex})))))))
+(defn- -send-message
+  [request-data]
+  (api-wrap :sendMessage request-data))
 
 
-(defmethod send-to-chat :message
-  [_ user text kbd optm]
-  (let [argm       (prepare-arguments-map {:text text :entities []} kbd optm user)
-        new-msg    (send-message-to-chat argm (to-edit? optm user))
+(defn- -edit-message-text
+  [body]
+  (try (api-wrap :editMessageText body)
+       (catch clojure.lang.ExceptionInfo ex
+         (when (not= 400 (-> ex ex-data :status))
+           (throw (ex-info "Request to :editMessageText failed!"
+                           {:event ::edit-message-text-error
+                            :args body
+                            :error ex})))
+         (log/warn ::edit-message-failed
+                   "Failed to edit message: %s" (ex-message ex)
+                   {:request body
+                    :error ex})
+         (-send-message body))))
+
+
+(defmethod send-to-chat :text
+  [_ user b options]
+  (let [body       (prepare-body b options user)
+        new-msg    ((if (to-edit? options user) -edit-message-text -send-message) body)
         new-msg-id (:message_id new-msg)]
     (log/debug ::send-to-chat-message
-               "Message sent to chat: %s" text
+               "Message sent to chat: %s" (:text body)
                {:user user
-                :text text
-                :entities nil
-                :keyboard kbd
-                :options optm
-                :new-message new-msg})
-    (when (and (not (:temp optm)) (not= new-msg-id (:msg-id user)))
+                :body body
+                :options options})
+    (when (and (not (:temp options)) (not= new-msg-id (:msg-id user)))
       (u/set-msg-id user new-msg-id))
     (set-callbacks-message-id user new-msg)))
 
 
-(defn prepare-and-send
-  [type user data kbd & opts]
-  (let [optm (prepare-options-map opts)
-        keyboard (prepare-keyboard (misc/remove-nils kbd) user optm)]
-    (send-to-chat type user data keyboard optm)))
+(defmulti process-args (fn [& args] (first args)))
+
+
+(defmethod process-args :text
+  [_ user & args]
+  (let [opts (->> args (filter keyword?) set)]
+    {:body    {:text         (->> args (filter string?) first)
+               :reply_markup (prepare-keyboard
+                               (->> args (filter vector?) first misc/remove-nils)
+                               user (boolean (some #{:temp} opts)))
+               :entities     (->> args (filter set?) first)}
+     :options (into {:message-id (->> args (filter int?) first)}
+                    (map #(vector % true) opts))}))
+
+
+(m/=> send! [:=> [:cat
+                  :keyword
+                  spec.mdl/User
+                  :string
+                  [:? [:set spec.tg/MessageEntity]]
+                  [:? spec/Buttons]
+                  [:? :int]
+                  [:* :keyword]]
+             :nil])
+
+
+(defn send!
+  [type user & args]
+  (let [{:keys [body options]} (apply process-args type user args)]
+    (send-to-chat type user body options)))
 
 
 (defn- download-file
