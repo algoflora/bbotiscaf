@@ -25,5 +25,5 @@
 
 (def Buttons
   [:vector
-   [:vector
-    [:fn (fn [btn] (instance? b/KeyboardButton btn))]]])
+   [:maybe [:vector
+            [:maybe [:fn (fn [btn] (instance? b/KeyboardButton btn))]]]]])

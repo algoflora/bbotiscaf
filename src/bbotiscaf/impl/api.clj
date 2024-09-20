@@ -232,7 +232,7 @@
                :reply_markup (prepare-keyboard
                                (->> args (filter vector?) first misc/remove-nils)
                                user (boolean (some #{:temp} opts)))
-               :entities     (->> args (filter set?) first)}
+               :entities     (->> args (filter set?) first vec)}
      :options (into {:message-id (->> args (filter int?) first)}
                     (map #(vector % true) opts))}))
 

@@ -10,8 +10,8 @@
 
 (defn- get-tree
   [dir]
-  (->> (fs/glob dir "**.*")
-       (filter #(boolean (re-find #".*[^~#]$" (fs/extension %))))))
+  (->> (fs/glob dir "**/*")
+       (filter #(boolean (re-find #".*[^~#]$" (str %))))))
 
 
 (def default-opts
