@@ -91,10 +91,10 @@
 
 
 (defmethod -check-message java.util.regex.Pattern
-  [{:keys [text caption]} exp]
+  [{:keys [text caption] :as msg} exp]
   (testing "text or caption regex"
-    (is (or (some? (re-find exp text))
-            (some? (re-find exp caption))))))
+    (is (or (and (some? text) (some? (re-find exp text)))
+            (and (some? caption) (some? (re-find exp caption)))))))
 
 
 (defmethod -check-message clojure.lang.PersistentVector
@@ -232,7 +232,7 @@
 
 (defn- call!
   [_ f & args]
-  (apply f args))
+  (apply (find-var f) args))
 
 
 (defn- println!
