@@ -141,5 +141,5 @@
   []
   (ig/halt! (app/get-app))
   (app/clear-app!)
-  (log/info ::sutdown-completed
+  (log/info ::shutdown-completed
             "Shutdown completed!"))

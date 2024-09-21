@@ -3,7 +3,7 @@
     [bbotiscaf.api :as api]
     [bbotiscaf.button :as b]
     [bbotiscaf.dynamic :refer [*user*]]
-    #_[bbotiscaf.impl.config :as conf]
+    [bbotiscaf.user :refer [has-role?]]
     [malli.core :as m]
     [taoensso.timbre :as log]))
 
@@ -24,7 +24,10 @@
          thrn (.getName thr)]
      (log/error ekw msg (merge data {:stacktrace st} {:thread thrn} {:is-error? true})))
    (when (some? *user*)
-     (api/send-message *user* "⚠️ Unexpected ERROR! ⚠️"
+     (api/send-message *user*
+                       (str "⚠️ Unexpected ERROR! ⚠️"
+                            (if (has-role? :admin *user*)
+                              (str "\n\n" (ex-message ex)) ""))
                        [[(b/text-btn "To Main Menu" 'bbotiscaf.handler/delete-and-home)]]
                        :temp))
    #_(when (= :test conf/profile)

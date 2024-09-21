@@ -1,6 +1,11 @@
 (ns bbotiscaf.config
   (:require
+    [bbotiscaf.impl.config :as conf]
     [bbotiscaf.impl.system.app :as app]))
+
+
+(def profile
+  conf/profile)
 
 
 (defn config

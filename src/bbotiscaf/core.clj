@@ -73,11 +73,14 @@
   [records context]
   (setup-logs! context)
   (sys/startup!)
-  (let [rs (:Records records)]
-    (log/info ::sqs-message-received
-              "Received SQS message. %d records." (count rs)
-              {:records-count (count rs)
-               :records rs
-               :context context})
-    (doseq [r rs]
-      (-> r log-and-prepare handler))))
+  (try
+    (let [rs (:Records records)]
+      (log/info ::sqs-message-received
+                "Received SQS message. %d records." (count rs)
+                {:records-count (count rs)
+                 :records rs
+                 :context context})
+      (doseq [r rs]
+        (-> r log-and-prepare handler)))
+    (finally
+      (sys/shutdown!))))

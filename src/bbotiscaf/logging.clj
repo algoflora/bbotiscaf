@@ -99,6 +99,7 @@
 
 (def lambda-json-spit-appender
   {:enabled? (= conf/profile :test)
+   :min-level :debug
    :fn (fn [event]
          (spit "logs.json" (str (generate-string (json-prepare event)) "\n") :append true))})
 
