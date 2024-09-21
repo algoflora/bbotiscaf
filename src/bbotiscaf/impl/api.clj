@@ -12,8 +12,6 @@
     [bbotiscaf.spec.model :as spec.mdl]
     [bbotiscaf.spec.telegram :as spec.tg]
     [cheshire.core :refer [generate-string parse-string]]
-    [clojure.string :as str]
-    [clojure.walk :as walk]
     [malli.core :as m]
     [taoensso.timbre :as log]))
 
@@ -21,15 +19,19 @@
 (defn request
   [method data]
   (let [url  (format "https://api.telegram.org/bot%s/%s" @app/bot-token (name method))
-        raw  (http/post url {:headers {:content-type "application/json"}
-                             :body (generate-string data)})
-        resp (update raw :body #(try (parse-string % true)
-                                     (catch Throwable _ %)))]
+
+        {:keys [result nanos]}
+        (misc/do-nanos* (http/post url {:headers {:content-type "application/json"}
+                                        :body (generate-string data)}))
+
+        resp (update result :body #(try (parse-string % true)
+                                        (catch Throwable _ %)))]
     (log/info ::telegram-api-response
               "Telegram api method %s response status %d" method (:status resp)
               {:method method
                :data data
-               :response resp})
+               :response resp
+               :time-millis (* 0.000001 nanos)})
     (if (-> resp :body :ok)
       (-> resp :body :result)
       (log/warn ::bad-telegram-api-response

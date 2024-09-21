@@ -5,6 +5,7 @@
     [bbotiscaf.impl.handler :as h]
     [bbotiscaf.impl.system :as sys]
     [bbotiscaf.impl.system.app :as app]
+    [bbotiscaf.impl.timer :refer [reset-timer!]]
     [bbotiscaf.logging :as logging]
     [bbotiscaf.spec.action :as spec.act]
     [bbotiscaf.spec.aws :as spec.aws]
@@ -52,6 +53,7 @@
 
 (defn- log-and-prepare
   [rec]
+  (reset-timer!)
   (log/debug ::handling-record
              "Handling SQS record. %s" rec
              {:record rec})

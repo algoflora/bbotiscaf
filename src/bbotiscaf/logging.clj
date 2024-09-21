@@ -2,6 +2,7 @@
   (:require
     [babashka.fs :as fs]
     [bbotiscaf.impl.config :as conf]
+    [bbotiscaf.impl.timer :refer [millis-passed]]
     [cheshire.core :refer [generate-string]]
     [clojure.stacktrace :as st]
     [clojure.string :as str]
@@ -84,6 +85,7 @@
   (let [data (check-json (select-keys (merge event (process-vargs (:vargs event)))
                                       [:instant :message-text :event-name :vargs
                                        :?err :?file :?line]))
+        data (assoc data :__millis-passed (millis-passed))
         vargs (:vargs data)]
     (-> data
         (dissoc :vargs)
@@ -110,8 +112,7 @@
 (fs/delete-if-exists "logs.edn")
 
 
-(timbre/merge-config! {:min-level :info
-                       :appenders (merge {:println lambda-stdout-appender
+(timbre/merge-config! {:appenders (merge {:println lambda-stdout-appender
                                           :json-file lambda-json-spit-appender
                                           :json-print lambda-json-println-appender})})
 
