@@ -130,7 +130,8 @@
          (uncaughtException
            [_ thread e]
            (handle-error thread e))))
-     (mi/instrument!)
+     (when (some? (System/getProperty "bbotiscaf.malli.instrument"))
+       (mi/instrument!))
      (let [config (conf/get-config)]
        (app/set-app! (ig/init (merge config conf)))
        (log/info ::startup-completed
