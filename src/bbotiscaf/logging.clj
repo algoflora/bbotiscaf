@@ -51,7 +51,7 @@
 (def lambda-stdout-appender
   {:enabled?   (= conf/profile :test)
    :async?     false
-   :min-level  :debug
+   :min-level  :info
    :rate-limit nil
    :output-fn  :inherit
    :fn         (fn [{:keys [level ?err vargs ?ns-str

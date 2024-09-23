@@ -18,8 +18,3 @@
                                :path args
                                :project-config (app/project-config)}))))
           (app/project-config) args))
-
-
-(defn update-config
-  [f]
-  (app/update-project-config f))

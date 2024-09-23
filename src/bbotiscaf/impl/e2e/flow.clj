@@ -92,7 +92,7 @@
 
 (defmethod -check-message java.util.regex.Pattern
   [{:keys [text caption] :as msg} exp]
-  (testing "text or caption regex"
+  (testing (str "text or caption regex of " msg)
     (is (or (and (some? text) (some? (re-find exp text)))
             (and (some? caption) (some? (re-find exp caption)))))))
 
