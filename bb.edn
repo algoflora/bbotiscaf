@@ -13,4 +13,4 @@
         :task (do
                 (System/setProperty "bbotiscaf.malli.instrument" "true")
                 (System/setProperty "bbotiscaf.profile" "test")
-                (kaocha.runner/-main))}}}
+                (kaocha.runner/-main "--fail-fast"))}}}

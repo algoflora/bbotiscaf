@@ -5,6 +5,7 @@
     [bbotiscaf.dynamic :refer [*user*]]
     [bbotiscaf.user :refer [has-role?]]
     [malli.core :as m]
+    [sci.core :as sci]
     [taoensso.timbre :as log]))
 
 
@@ -20,7 +21,7 @@
                 (assoc :explain (m/explain (-> data :data :output) (-> data :data :value))))
          ekw  (or (:event data) :error-event)
          msg  (ex-message ex)
-         st   (take 5 (.getStackTrace ex))
+         st   (sci/format-stacktrace (sci/stacktrace ex))  #_(take 5 (.getStackTrace ex))
          thrn (.getName thr)]
      (log/error ekw msg (merge data {:stacktrace st} {:thread thrn} {:is-error? true})))
    (when (some? *user*)

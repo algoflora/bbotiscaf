@@ -5,4 +5,5 @@
           :ns-patterns [".*"]}]
  :reporter kaocha.report/dots
  :plugins [:kaocha.plugin/profiling]
- :kaocha.plugin.profiling/profiling? false}
+ :kaocha.plugin.profiling/profiling? false
+ :kaocha.plugin.randomize/randomize? false}

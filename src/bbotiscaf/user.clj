@@ -12,7 +12,8 @@
 
 
 (defmacro with-role
-  {:clj-kondo/lint-as 'clojure.core/when}
+  {:style/indent [1]
+   :clj-kondo/lint-as 'clojure.core/when}
   [role & body]
   `(do
      (require '[bbotiscaf.api]

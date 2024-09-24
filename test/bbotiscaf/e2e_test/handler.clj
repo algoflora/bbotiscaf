@@ -15,8 +15,8 @@
   (let [text (or (:text msg) "stranger")]
     (api/send-message *user*
                       (format "Hi, %s!" text)
-                      [[(b/text-btn "Go!" 'bbotiscaf.e2e-test.handler/go {:text text})]
-                       [(b/text-btn "Temp" 'bbotiscaf.e2e-test.handler/temp)]])))
+                      [[(b/text-btn "Go!" 'go {:text text})]
+                       [(b/text-btn "Temp" 'temp)]])))
 
 
 (defn go
@@ -33,7 +33,7 @@
 
 (defn store
   [_]
-  (api/send-message *user* "Hello" [[(b/text-btn "Save" 'bbotiscaf.e2e-test.handler/save)]]))
+  (api/send-message *user* "Hello" [[(b/text-btn "Save" 'save)]]))
 
 
 (defn save

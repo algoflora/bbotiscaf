@@ -1,6 +1,6 @@
 (ns bbotiscaf.e2e-test
   (:require
-    [bbotiscaf.impl.e2e.flow :refer [flow-pipeline defflow]]))
+    [bbotiscaf.impl.e2e.flow :refer [flows-out defflow]]))
 
 
 (defflow :users/main-message
@@ -69,20 +69,20 @@
    :user/check-msg "Hello World!" [["Button"]]])
 
 
-(flow-pipeline Core
-               [:users/main-message :users/temp-message])
+(flows-out Core
+           [:users/main-message :users/temp-message])
 
 
-(flow-pipeline DB
-               'bbotiscaf.e2e-test.handler/store
-               [:users/additional-entities])
+(flows-out DB
+           'bbotiscaf.e2e-test.handler/store
+           [:users/additional-entities])
 
 
-(flow-pipeline Roles
-               'bbotiscaf.e2e-test.handler/roled
-               [:users/roles])
+(flows-out Roles
+           'bbotiscaf.e2e-test.handler/roled
+           [:users/roles])
 
 
-(flow-pipeline Error
-               'bbotiscaf.e2e-test.handler/error
-               [:users/error])
+(flows-out Error
+           'bbotiscaf.e2e-test.handler/error
+           [:users/error])

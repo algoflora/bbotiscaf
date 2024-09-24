@@ -10,12 +10,8 @@
      [bbotiscaf.spec.telegram :as spec.tg]
      [clojure.string :as str]
      [clojure.test :refer [is testing]]
-     [clojure.walk :refer [postwalk]]
      [malli.core :as m]
      [taoensso.timbre :as log]))
-
-
-(require '[pod.huahaiy.datalevin :as d])
 
 
 (m/=> str?->re [:-> [:or :string Regexp] Regexp])
@@ -234,29 +230,50 @@
   (try
     (sys/startup!)
     (apply-blueprint blueprint)
-    (dum/clear-all)
-    (sys/shutdown!)
     (catch Exception ex
       (handle-error ex)
-      (throw ex))))
+      (throw ex))
+    (finally
+      (dum/clear-all)
+      (sys/shutdown!))))
 
 
 (defonce flows (atom {}))
 
 
+(defn- get-flow
+  [key]
+  (if-let [flow (key @flows)]
+    flow
+    (throw (ex-info (format "Flow with key `%s` not found!" key)
+                    {:event :flow-not-found-error
+                     :key key
+                     :available-keys (keys @flows)}))))
+
+
 (defmacro defflow
   [key blueprint]
   {:style/indent [1]}
-  `(swap! flows assoc ~key ~blueprint))
+  (let [key (if (qualified-keyword? key) key
+                (keyword (as-> &env $
+                               (:ns $)
+                               (str/split $ #"\n")
+                               (drop-while #(not= "test-flows" %) $)
+                               (rest $)
+                               (str/join "." $))
+                         (name key)))]
+    `(swap! flows assoc ~key ~blueprint)))
 
 
-(defmacro flow-pipeline
+(defmacro flows-out
   {:style/indent [1]
    :clj-kondo/lint-as 'clojure.core/def}
   [name & args]
   (let [[h arg] (if (= 2 (count args)) [(first args) (second args)] [nil (first  args)])]
-    `(clojure.test/deftest ~name
-       (let [~'blueprint (vec (apply concat (mapv #(% @flows) ~arg)))]
-         (with-redefs [bbotiscaf.impl.system.app/handler-main
-                       (if (some? ~h) (fn [] ~h) bbotiscaf.impl.system.app/handler-main)]
-           (flow ~'blueprint))))))
+    `(do
+       ;; (alter-var-root #'clojure.test/*stack-trace-depth* (constantly 1))
+       (clojure.test/deftest ~name
+         (let [~'blueprint (vec (apply concat (mapv get-flow ~arg)))]
+           (with-redefs [bbotiscaf.impl.system.app/handler-main
+                         (if (some? ~h) (fn [] ~h) bbotiscaf.impl.system.app/handler-main)]
+             (flow ~'blueprint)))))))
