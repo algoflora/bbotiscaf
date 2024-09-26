@@ -255,9 +255,10 @@
   [key blueprint]
   {:style/indent [1]}
   (let [key (if (qualified-keyword? key) key
-                (keyword (as-> &env $
-                               (:ns $)
-                               (str/split $ #"\n")
+                (keyword (as-> *ns* $
+                               (ns-name $)
+                               (name $)
+                               (str/split $ #"\.")
                                (drop-while #(not= "test-flows" %) $)
                                (rest $)
                                (str/join "." $))

@@ -27,9 +27,12 @@
     (when (not (map? lang-map))
       (throw (ex-info "Not a map in texts by given path!"
                       {:event ::no-text-map-on-path :path path :lang-map lang-map})))
-    (apply format (or ((keyword lang) lang-map) (@app/default-language-code lang-map))
-           ;; (let [forms (or ((keyword lang) lang-map) (@app/default-language-code lang-map))]
-           ;;   (if (vector? forms)
-           ;;     (nth forms (max form (-> forms count dec)))
-           ;;     forms))
+    (apply format
+           (let [forms (or (and (some? lang) ((keyword lang) lang-map))
+                           (and (some? @app/default-language-code)
+                                (@app/default-language-code lang-map))
+                           (-> lang-map first val))]
+             (if (vector? forms)
+               (nth forms (min form (-> forms count dec)))
+               forms))
            args)))
