@@ -40,8 +40,8 @@
            (map? argn))
       (merge {:event-name arg1
               :message-text (let [text (apply format (rest vargs))]
-                              (if (< 256 (count text))
-                                (str (subs text 0 253) "...")
+                              (if (< 1024 (count text))
+                                (str (subs text 0 1023) "...")
                                 text))}
              argn)
 
@@ -80,11 +80,11 @@
             data))
 
 
-(defn- json-prepare
+(defn- obj-prepare
   [event]
-  (let [data (check-json (select-keys (merge event (process-vargs (:vargs event)))
-                                      [:instant :message-text :event-name :vargs
-                                       :?err :?file :?line]))
+  (let [data (select-keys (merge event (process-vargs (:vargs event)))
+                          [:instant :message-text :event-name :vargs
+                           :?err :?file :?line])
         data (assoc data :__millis-passed (millis-passed))
         vargs (:vargs data)]
     (-> data
@@ -96,14 +96,21 @@
   {:enabled? (= conf/profile :aws)
    :min-level :debug
    :fn (fn [event]
-         (println (generate-string (json-prepare event))))})
+         (println (generate-string (check-json (obj-prepare event)))))})
 
 
 (def lambda-json-spit-appender
   {:enabled? (= conf/profile :test)
    :min-level :debug
    :fn (fn [event]
-         (spit "logs.json" (str (generate-string (json-prepare event)) "\n") :append true))})
+         (spit "logs.json" (str (generate-string (check-json (obj-prepare event))) "\n") :append true))})
+
+
+(def lambda-edn-spit-appender
+  {:enabled? (= conf/profile :test)
+   :min-level :debug
+   :fn (fn [event]
+         (spit "logs.edn" (prn-str (obj-prepare event)) :append true))})
 
 
 (fs/delete-if-exists "logs.json")
@@ -114,6 +121,7 @@
 
 (timbre/merge-config! {:appenders (merge {:println lambda-stdout-appender
                                           :json-file lambda-json-spit-appender
+                                          :edn-file lambda-edn-spit-appender
                                           :json-print lambda-json-println-appender})})
 
 

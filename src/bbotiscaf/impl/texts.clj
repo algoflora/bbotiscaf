@@ -29,8 +29,8 @@
                       {:event ::no-text-map-on-path :path path :lang-map lang-map})))
     (apply format
            (let [forms (or (and (some? lang) ((keyword lang) lang-map))
-                           (and (some? @app/default-language-code)
-                                (@app/default-language-code lang-map))
+                           (and (some? (app/default-language-code))
+                                ((app/default-language-code) lang-map))
                            (-> lang-map first val))]
              (if (vector? forms)
                (nth forms (min form (-> forms count dec)))

@@ -4,8 +4,9 @@
     [bbotiscaf.button :as b]
     [bbotiscaf.dynamic :refer [*user*]]
     [bbotiscaf.user :refer [has-role?]]
+    [clojure.stacktrace :as st]
+    [clojure.string :as str]
     [malli.core :as m]
-    [sci.core :as sci]
     [taoensso.timbre :as log]))
 
 
@@ -21,9 +22,9 @@
                 (assoc :explain (m/explain (-> data :data :output) (-> data :data :value))))
          ekw  (or (:event data) :error-event)
          msg  (ex-message ex)
-         st   (sci/format-stacktrace (sci/stacktrace ex))  #_(take 5 (.getStackTrace ex))
+         st   (take 10 (str/split (with-out-str (st/print-stack-trace ex)) #"\n")) #_(take 5 (.getStackTrace ex))
          thrn (.getName thr)]
-     (log/error ekw msg (merge data {:stacktrace st} {:thread thrn} {:is-error? true})))
+     (log/error ekw msg (merge data {:stacktrace st :thread thrn :cause (ex-cause ex) :is-error? true})))
    (when (some? *user*)
      (api/send-message *user*
                        (str "⚠️ Unexpected ERROR! ⚠️"

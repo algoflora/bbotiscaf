@@ -42,7 +42,11 @@
 
 (def bot-roles (delay (:bot/roles @app)))
 
-(def default-language-code (delay (:bot/default-language-code @app)))
+
+(defn default-language-code
+  []
+  (:bot/default-language-code @app))
+
 
 (def api-fn (delay (:api/fn @app)))
 

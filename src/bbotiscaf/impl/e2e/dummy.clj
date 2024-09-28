@@ -16,7 +16,7 @@
 
 
 (defn- create
-  ([key] (create key @app/default-language-code))
+  ([key] (create key (app/default-language-code)))
   ([key lang]
    {:id (inc (count @dummies))
     :is_bot false

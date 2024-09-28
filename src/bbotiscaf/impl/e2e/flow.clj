@@ -226,10 +226,12 @@
 
 
 (defn- flow
-  [blueprint]
+  [blueprints]
   (try
     (sys/startup!)
-    (apply-blueprint blueprint)
+    (doseq [[k bp] blueprints]
+      (testing (str k)
+        (apply-blueprint bp)))
     (catch Exception ex
       (handle-error ex)
       (throw ex))
@@ -272,9 +274,8 @@
   [name & args]
   (let [[h arg] (if (= 2 (count args)) [(first args) (second args)] [nil (first  args)])]
     `(do
-       ;; (alter-var-root #'clojure.test/*stack-trace-depth* (constantly 1))
        (clojure.test/deftest ~name
-         (let [~'blueprint (vec (apply concat (mapv get-flow ~arg)))]
+         (let [~'blueprints (mapv #(vector % (get-flow %)) ~arg)]
            (with-redefs [bbotiscaf.impl.system.app/handler-main
                          (if (some? ~h) (fn [] ~h) bbotiscaf.impl.system.app/handler-main)]
-             (flow ~'blueprint)))))))
+             (flow ~'blueprints)))))))
