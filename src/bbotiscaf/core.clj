@@ -30,7 +30,9 @@
               {:action action
                :ok true
                :response (action-fn arguments)})
-    (throw (ex-info "Wrong action type!" {:action-type type}))))
+    (throw (ex-info "Wrong action type!"
+                    {:event ::wrong-action-error
+                     :action-type type}))))
 
 
 (m/=> handler [:-> spec/Request :any])
