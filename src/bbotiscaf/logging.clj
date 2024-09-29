@@ -110,7 +110,11 @@
   {:enabled? (= conf/profile :test)
    :min-level :debug
    :fn (fn [event]
-         (spit "logs.edn" (prn-str (obj-prepare event)) :append true))})
+         (spit "logs.edn" (-> event
+                              obj-prepare
+                              prn-str
+                              (str/replace "#'" "'")
+                              (str/replace "#\"" "\"")) :append true))})
 
 
 (fs/delete-if-exists "logs.json")

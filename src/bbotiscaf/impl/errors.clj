@@ -22,7 +22,7 @@
                 (assoc :explain (m/explain (-> data :data :output) (-> data :data :value))))
          ekw  (or (:event data) :error-event)
          msg  (ex-message ex)
-         st   (take 10 (str/split (with-out-str (st/print-stack-trace ex)) #"\n")) #_(take 5 (.getStackTrace ex))
+         st   (take 32 (str/split (with-out-str (st/print-stack-trace ex)) #"\n")) #_(take 5 (.getStackTrace ex))
          thrn (.getName thr)]
      (log/error ekw msg (merge data {:stacktrace st :thread thrn :cause (ex-cause ex) :is-error? true})))
    (when (some? *user*)
