@@ -221,6 +221,11 @@
   (apply (find-var f) args))
 
 
+(defn- action!
+  [_ k argm]
+  (cl/call-action k argm))
+
+
 (defn- println!
   [_ text]
   (println text))

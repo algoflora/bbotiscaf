@@ -2,9 +2,11 @@
   (:require
     [bbotiscaf.core :as bbot]
     [bbotiscaf.impl.e2e.dummy :as dum]
+    [bbotiscaf.spec.action :as spec.act]
     [bbotiscaf.spec.commons :refer [Regexp]]
     [bbotiscaf.spec.telegram :as spec.tg]
-    [malli.core :as m]))
+    [malli.core :as m]
+    [tick.core :as t]))
 
 
 (defonce ^:private update-id (atom 0))
@@ -16,6 +18,14 @@
   [data]
   (let [update (assoc data :update_id (swap! update-id inc))]
     (#'bbot/handler update)))
+
+
+(m/=> send-action-request [:-> spec.act/ActionRequest :any])
+
+
+(defn- send-action-request
+  [action-request]
+  (#'bbot/handler action-request))
 
 
 (m/=> dummy-kw?->dummy [:-> [:or spec.tg/User :keyword] spec.tg/User])
@@ -38,6 +48,17 @@
      :chat {:id (:id dummy)
             :type "private"}
      :date (System/currentTimeMillis)}))
+
+
+(m/=> call-action [:=> [:cat :keyword :map] :any])
+
+
+(defn call-action
+  [type args-map]
+  (let [action-request {:action {:method (name type)
+                                 :arguments args-map
+                                 :timestamp (t/millis (t/between (t/epoch) (t/inst)))}}]
+    (send-action-request action-request)))
 
 
 (m/=> send-text [:=>

@@ -23,8 +23,8 @@
 
 
 (defn- handle-action
-  [{:keys [action] {:keys [type arguments]} :action}]
-  (if-let [action-fn (resolve (symbol "actions" type))]
+  [{:keys [action] {:keys [method arguments]} :action}]
+  (if-let [action-fn (resolve (symbol "actions" method))]
     (log/info ::action-success
               "Action '%s' completed successfully" type
               {:action action

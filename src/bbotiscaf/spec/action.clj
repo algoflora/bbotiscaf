@@ -3,7 +3,7 @@
     [bbotiscaf.spec.commons :refer [Error]]))
 
 
-(def ActionSchema
+(def Action
   [:map
    [:method :string]
    [:arguments :map]
@@ -12,24 +12,24 @@
 
 (def ActionRequest
   [:map
-   [:action ActionSchema]])
+   [:action Action]])
 
 
-(def ActionResponseSuccessSchema
+(def ActionResponseSuccess
   [:map
-   [:action ActionSchema]
+   [:action Action]
    [:ok [:= true]]
    [:response :any]])
 
 
-(def ActionResponseFailureSchema
+(def ActionResponseFailure
   [:map
-   [:action ActionSchema]
+   [:action Action]
    [:ok [:= false]]
    [:error Error]])
 
 
-(def ActionResponseSchema
+(def ActionResponse
   [:or
-   ActionResponseSuccessSchema
-   ActionResponseFailureSchema])
+   ActionResponseSuccess
+   ActionResponseFailure])
