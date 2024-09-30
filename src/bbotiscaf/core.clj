@@ -5,6 +5,7 @@
     [bbotiscaf.impl.handler :as h]
     [bbotiscaf.impl.system :as sys]
     [bbotiscaf.impl.system.app :as app]
+    [bbotiscaf.impl.timer :refer [reset-timer!]]
     [bbotiscaf.logging :as logging]
     [bbotiscaf.spec.action :as spec.act]
     [bbotiscaf.spec.aws :as spec.aws]
@@ -18,7 +19,7 @@
 (require '[pod.huahaiy.datalevin :as d])
 
 
-(m/=> handle-action [:-> spec.act/ActionRequest :nil])
+(m/=> handle-action [:-> spec.act/ActionRequest :any])
 
 
 (defn- handle-action
@@ -29,10 +30,12 @@
               {:action action
                :ok true
                :response (action-fn arguments)})
-    (throw (ex-info "Wrong action type!" {:action-type type}))))
+    (throw (ex-info "Wrong action type!"
+                    {:event ::wrong-action-error
+                     :action-type type}))))
 
 
-(m/=> handler [:-> spec/Request :nil])
+(m/=> handler [:-> spec/Request :any])
 
 
 (defn- handler
@@ -52,6 +55,7 @@
 
 (defn- log-and-prepare
   [rec]
+  (reset-timer!)
   (log/debug ::handling-record
              "Handling SQS record. %s" rec
              {:record rec})
@@ -66,18 +70,21 @@
 
 (m/=> sqs-receiver [:=> [:cat
                          spec.aws/SQSRecordsBunch
-                         spec.aws/SQSContext] :nil])
+                         spec.aws/SQSContext] :any])
 
 
 (defn sqs-receiver
   [records context]
   (setup-logs! context)
   (sys/startup!)
-  (let [rs (:Records records)]
-    (log/info ::sqs-message-received
-              "Received SQS message. %d records." (count rs)
-              {:records-count (count rs)
-               :records rs
-               :context context})
-    (doseq [r rs]
-      (-> r log-and-prepare handler))))
+  (try
+    (let [rs (:Records records)]
+      (log/info ::sqs-message-received
+                "Received SQS message. %d records." (count rs)
+                {:records-count (count rs)
+                 :records rs
+                 :context context})
+      (doseq [r rs]
+        (-> r log-and-prepare handler)))
+    (finally
+      (sys/shutdown!))))

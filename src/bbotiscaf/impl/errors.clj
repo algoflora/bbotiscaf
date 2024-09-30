@@ -3,7 +3,9 @@
     [bbotiscaf.api :as api]
     [bbotiscaf.button :as b]
     [bbotiscaf.dynamic :refer [*user*]]
-    #_[bbotiscaf.impl.config :as conf]
+    [bbotiscaf.user :refer [has-role?]]
+    [clojure.stacktrace :as st]
+    [clojure.string :as str]
     [malli.core :as m]
     [taoensso.timbre :as log]))
 
@@ -20,11 +22,14 @@
                 (assoc :explain (m/explain (-> data :data :output) (-> data :data :value))))
          ekw  (or (:event data) :error-event)
          msg  (ex-message ex)
-         st   (take 5 (.getStackTrace ex))
+         st   (take 32 (str/split (with-out-str (st/print-stack-trace ex)) #"\n")) #_(take 5 (.getStackTrace ex))
          thrn (.getName thr)]
-     (log/error ekw msg (merge data {:stacktrace st} {:thread thrn} {:is-error? true})))
+     (log/error ekw msg (merge data {:stacktrace st :thread thrn :cause (ex-cause ex) :is-error? true})))
    (when (some? *user*)
-     (api/send-message *user* "⚠️ Unexpected ERROR! ⚠️"
+     (api/send-message *user*
+                       (str "⚠️ Unexpected ERROR! ⚠️"
+                            (if (has-role? :admin *user*)
+                              (str "\n\n" (ex-message ex)) ""))
                        [[(b/text-btn "To Main Menu" 'bbotiscaf.handler/delete-and-home)]]
                        :temp))
    #_(when (= :test conf/profile)

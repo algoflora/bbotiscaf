@@ -1,6 +1,11 @@
 (ns bbotiscaf.config
   (:require
+    [bbotiscaf.impl.config :as conf]
     [bbotiscaf.impl.system.app :as app]))
+
+
+(def profile
+  conf/profile)
 
 
 (defn config
@@ -13,8 +18,3 @@
                                :path args
                                :project-config (app/project-config)}))))
           (app/project-config) args))
-
-
-(defn update-config
-  [f]
-  (app/update-project-config f))

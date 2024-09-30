@@ -49,7 +49,7 @@
   [:map
    {:closed true}
    [:text :string]
-   [:entities {:optional true} [:vector MessageEntity]]])
+   [:entities {:optional true} [:maybe [:vector MessageEntity]]]])
 
 
 (def Button
@@ -170,7 +170,7 @@
      BaseRequest
      [:map
       [:text :string]
-      [:entities [:vector MessageEntity]]]
+      [:entities [:maybe [:vector MessageEntity]]]]
      ReplyMarkup]
     {:registry registry}))
 

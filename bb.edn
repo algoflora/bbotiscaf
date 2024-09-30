@@ -11,5 +11,6 @@
         :extra-deps {lambdaisland/kaocha {:mvn/version "1.91.1392"}}
         :requires ([kaocha.runner])
         :task (do
+                (System/setProperty "bbotiscaf.malli.instrument" "true")
                 (System/setProperty "bbotiscaf.profile" "test")
-                (kaocha.runner/-main))}}}
+                (kaocha.runner/-main "--fail-fast"))}}}

@@ -16,7 +16,7 @@
 (def ^:private types #{:message :callback_query :pre_checkout_query})
 
 
-(m/=> handle-update- [:=> [:cat :keyword spec.tg/Update] :nil])
+(m/=> handle-update- [:=> [:cat :keyword spec.tg/Update] :any])
 
 
 (defn- handle-update-
@@ -29,7 +29,7 @@
         (handle-error (Thread/currentThread) ex)))))
 
 
-(m/=> handle-update [:-> spec.tg/Update :nil])
+(m/=> handle-update [:-> spec.tg/Update :any])
 
 
 (defn handle-update

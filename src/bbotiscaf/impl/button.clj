@@ -11,6 +11,12 @@
 
 
 (extend-protocol b/KeyboardButton
+  clojure.lang.PersistentArrayMap
+  (to-map [this] this)
+
+  clojure.lang.PersistentHashMap
+  (to-map [this] this)
+
   b/TextButton
   (to-map [this user]
     {:text (:text this)
@@ -32,9 +38,9 @@
   b/HomeButton
   (to-map [this user]
     (let [text (cond
-		 (nil? (:text this))    (txt [:home])
-		 (vector? (:text this)) (txt (:text this))
-		 :else                  (:text this))]
+                 (nil? (:text this))    (txt [:home])
+                 (vector? (:text this)) (txt (:text this))
+                 :else                  (:text this))]
       {:text text
        :callback_data
        (str (clb/set-callback user (symbol (app/handler-main)) {}))}))

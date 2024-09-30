@@ -1,6 +1,8 @@
 (ns bbotiscaf.texts
-  (:require [bbotiscaf.impl.texts :as impl]
-            [bbotiscaf.dynamic :refer [*user*]]))
+  (:require
+    [bbotiscaf.dynamic :refer [*user*]]
+    [bbotiscaf.impl.texts :as impl]))
+
 
 (defn txti
 
@@ -11,6 +13,7 @@
 
   [language-code path & args]
   (apply impl/txti language-code path args))
+
 
 (defn txt
 

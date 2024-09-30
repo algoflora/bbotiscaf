@@ -10,12 +10,9 @@
      [bbotiscaf.spec.telegram :as spec.tg]
      [clojure.string :as str]
      [clojure.test :refer [is testing]]
-     [clojure.walk :refer [postwalk]]
      [malli.core :as m]
-     [taoensso.timbre :as log]))
-
-
-(require '[pod.huahaiy.datalevin :as d])
+     [taoensso.timbre :as log]
+     [tick.core :as t]))
 
 
 (m/=> str?->re [:-> [:or :string Regexp] Regexp])
@@ -92,7 +89,7 @@
 
 (defmethod -check-message java.util.regex.Pattern
   [{:keys [text caption] :as msg} exp]
-  (testing "text or caption regex"
+  (testing (str "text or caption regex of " msg)
     (is (or (and (some? text) (some? (re-find exp text)))
             (and (some? caption) (some? (re-find exp caption)))))))
 
@@ -111,22 +108,11 @@
             (is (some? (re-find re (:text btn))))))))))
 
 
-(defn- -check-message-entities
+(defmethod -check-message clojure.lang.PersistentHashSet
   [msg exp]
-  (testing "text or caption entities"
-    (let [exp (vec exp)]
-      (is (or (= exp (:entities msg))
-              (= exp (:caption_entities msg)))))))
-
-
-(defmethod -check-message clojure.lang.PersistentList
-  [msg exp]
-  (-check-message-entities msg exp))
-
-
-(defmethod -check-message clojure.lang.PersistentList$EmptyList
-  [msg exp]
-  (-check-message-entities msg exp))
+  (testing (format "text or caption entities %s %s" (:entities msg) exp)
+    (is (or (= exp (set (:entities msg)))
+            (= exp (set (:caption_entities msg)))))))
 
 
 (m/=> check-msg [:=> [:cat spec.tg/User spec.bp/CheckMessageBlueprintEntryArgs] :nil])
@@ -240,34 +226,84 @@
   (println text))
 
 
+(def ^:dynamic *clock* nil)
+
+
+(defn- swap-clock
+  [_ & args]
+  (apply t/swap! *clock* args))
+
+
+(defn- set-clock
+  [_ clock]
+  (t/reset! *clock* (cond
+                      (t/clock? clock) clock
+                      (t/instant? clock) (t/clock clock)
+                      (string? clock) (t/clock (t/instant clock)))))
+
+
+(defn- reset-clock
+  [_]
+  (t/reset! *clock* (t/clock)))
+
+
 (defn- flow
-  [blueprint]
+  [blueprints]
   (try
     (sys/startup!)
-    (apply-blueprint blueprint)
-    (dum/clear-all)
-    (sys/shutdown!)
+    (doseq [[k bp] blueprints]
+      (testing (str k)
+        (t/with-clock *clock*
+                      (apply-blueprint bp))))
     (catch Exception ex
       (handle-error ex)
-      (throw ex))))
+      (throw ex))
+    (finally
+      (dum/clear-all)
+      (sys/shutdown!))))
 
 
 (defonce flows (atom {}))
 
 
+(defn- get-flow
+  [key]
+  (if-let [flow (key @flows)]
+    flow
+    (throw (ex-info (format "Flow with key `%s` not found!" key)
+                    {:event :flow-not-found-error
+                     :key key
+                     :available-keys (keys @flows)}))))
+
+
 (defmacro defflow
   [key blueprint]
   {:style/indent [1]}
-  `(swap! flows assoc ~key ~blueprint))
+  (let [key (if (qualified-keyword? key) key
+                (keyword (as-> *ns* $
+                               (ns-name $)
+                               (name $)
+                               (str/split $ #"\.")
+                               (drop-while #(not= "test-flows" %) $)
+                               (rest $)
+                               (str/join "." $))
+                         (name key)))]
+    `(swap! flows assoc ~key ~blueprint)))
 
 
-(defmacro flow-pipeline
+(defmacro flows-out
   {:style/indent [1]
    :clj-kondo/lint-as 'clojure.core/def}
   [name & args]
   (let [[h arg] (if (= 2 (count args)) [(first args) (second args)] [nil (first  args)])]
-    `(clojure.test/deftest ~name
-       (let [~'blueprint (vec (apply concat (mapv #(% @flows) ~arg)))]
-         (with-redefs [bbotiscaf.impl.system.app/handler-main
-                       (if (some? ~h) (fn [] ~h) bbotiscaf.impl.system.app/handler-main)]
-           (flow ~'blueprint))))))
+    `(do
+       (clojure.test/deftest ~name
+         (let [a-clock (t/atom)
+               ~'blueprints (mapv #(cond
+                                     (keyword? %) [% (get-flow %)]
+                                     (vector?  %) [:inline %])
+                                  ~arg)]
+           (with-redefs [bbotiscaf.impl.system.app/handler-main
+                         (if (some? ~h) (fn [] ~h) bbotiscaf.impl.system.app/handler-main)]
+             (binding [*clock* a-clock]
+               (flow ~'blueprints))))))))

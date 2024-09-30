@@ -9,8 +9,8 @@
   `(impl/defflow ~@args))
 
 
-(defmacro flow-pipeline
+(defmacro flows-out
   {:style/indent [1]
    :clj-kondo/lint-as 'clojure.core/def}
   [& args]
-  `(impl/flow-pipeline ~@args))
+  `(impl/flows-out ~@args))

@@ -1,6 +1,12 @@
 (ns bbotiscaf.button)
 
 
+(defn- add-ns
+  [ns sym]
+  (if (qualified-symbol? sym) sym
+      (symbol (-> ns ns-name name) (name sym))))
+
+
 (defprotocol KeyboardButton
 
   (to-map [this user]))
@@ -10,29 +16,33 @@
   [text func args])
 
 
-(defn text-btn
-  ([text func] (text-btn text func {}))
+(defmacro text-btn
+  ([text func]
+   `(text-btn ~text ~func {}))
   ([text func args]
-   (->TextButton text func args)))
+   `(->TextButton ~text (add-ns ~*ns* ~func) ~args)))
 
 
 (defrecord TxtButton
   [txt func args])
 
 
-(defn txt-btn
-  ([txt func] (txt-btn txt func {}))
+(defmacro txt-btn
+  ([txt func]
+   `(txt-btn ~txt ~func {}))
   ([txt func args]
-   (->TxtButton txt func args)))
+   `(->TxtButton ~txt (add-ns ~*ns* ~func) ~args)))
 
 
 (defrecord TxtiButton
   [txt lang func args])
 
 
-(defn txti-btn
-  [txt lang func args]
-  (->TxtiButton txt lang func args))
+(defmacro txti-btn
+  ([txt lang func]
+   `(txti-btn ~txt ~lang ~func {}))
+  ([txt lang func args]
+   `(->TxtiButton ~txt ~lang (add-ns ~*ns* ~func) ~args)))
 
 
 (defrecord HomeButton

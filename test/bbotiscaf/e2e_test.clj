@@ -1,21 +1,21 @@
 (ns bbotiscaf.e2e-test
   (:require
-    [bbotiscaf.impl.e2e.flow :refer [flow-pipeline defflow]]))
+    [bbotiscaf.impl.e2e.flow :refer [flows-out defflow]]))
 
 
 (defflow :users/main-message
   [:ivan/send-text "Ivan"
-   :ivan/check-msg "Hi, Ivan!" '() [[#"Go"] ["Temp"]]
+   :ivan/check-msg "Hi, Ivan!" #{} [[#"Go"] ["Temp"]]
    :mary/send-text "Mary"
    :mary/check-msg "Hi, Mary!" [["Go!"] ["Temp"]]
    :ivan/click-btn #"^Go"
    :mary/click-btn "Go"
-   :mary/check-msg "Go, Mary!" '() [["Home"]]
+   :mary/check-msg "Go, Mary!" #{} [["Home"]]
    :ivan/check-msg "Go, Ivan!" [["Home"]]
    :ivan/click-btn "Home"
    :mary/click-btn "Home"
    :ivan/check-msg "Hi, stranger!" [["Go"] ["Temp"]]
-   :mary/check-msg #"stranger" '() [["Go"] ["Temp"]]])
+   :mary/check-msg #"stranger" #{} [["Go"] ["Temp"]]])
 
 
 (defflow :users/temp-message
@@ -69,20 +69,20 @@
    :user/check-msg "Hello World!" [["Button"]]])
 
 
-(flow-pipeline Core
-               [:users/main-message :users/temp-message])
+(flows-out Core
+           [:users/main-message :users/temp-message])
 
 
-(flow-pipeline DB
-               'bbotiscaf.e2e-test.handler/store
-               [:users/additional-entities])
+(flows-out DB
+           'bbotiscaf.e2e-test.handler/store
+           [:users/additional-entities])
 
 
-(flow-pipeline Roles
-               'bbotiscaf.e2e-test.handler/roled
-               [:users/roles])
+(flows-out Roles
+           'bbotiscaf.e2e-test.handler/roled
+           [:users/roles])
 
 
-(flow-pipeline Error
-               'bbotiscaf.e2e-test.handler/error
-               [:users/error])
+(flows-out Error
+           'bbotiscaf.e2e-test.handler/error
+           [:users/error])

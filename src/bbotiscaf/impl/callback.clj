@@ -2,7 +2,7 @@
   (:require
     [bbotiscaf.dynamic :refer [*dtlv* dtlv *user*]]
     [bbotiscaf.impl.system.app :as app]
-    [bbotiscaf.misc :refer [do-nanos]]
+    [bbotiscaf.misc :refer [do-nanos do-nanos*]]
     [bbotiscaf.spec.model :as spec.mdl]
     [malli.core :as m]
     [taoensso.timbre :as log]))
@@ -14,12 +14,16 @@
 (def require-namespaces
   (delay
     (let [namespaces  (app/handler-namespaces)
-          time-millis (* (do-nanos (doseq [ns (conj namespaces 'bbotiscaf.handler)]
-                                     (require ns)))
-                         0.000001)]
+
+          {:keys [result nanos]}
+          (do-nanos* (into {}
+                           (map #(vector (keyword %) (* (do-nanos (require %)) 0.000001))
+                                (conj namespaces 'bbotiscaf.handler))))
+
+          time-millis (* nanos 0.000001)]
       (log/info ::require-namespaces
                 "Required namespaces (%.3f msec): %s" time-millis (str namespaces)
-                {:namespaces namespaces
+                {:namespaces result
                  :time-millis time-millis}))))
 
 
@@ -144,14 +148,17 @@
       (set-callback user main-handler nil false (:user/uuid user)))))
 
 
-(m/=> call [:function
-            [:=> [:cat :uuid] :nil]
-            [:=> [:cat :uuid :map] :nil]])
+(m/=> call-func [:=> [:cat :symbol :map] :any])
 
 
 (defn call-func
   [func args]
   ((find-var func) args))
+
+
+(m/=> call [:function
+            [:=> [:cat :uuid] :any]
+            [:=> [:cat :uuid :map] :any]])
 
 
 (defn call
