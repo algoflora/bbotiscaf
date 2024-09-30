@@ -11,7 +11,8 @@
      [clojure.string :as str]
      [clojure.test :refer [is testing]]
      [malli.core :as m]
-     [taoensso.timbre :as log]))
+     [taoensso.timbre :as log]
+     [tick.core :as t]))
 
 
 (m/=> str?->re [:-> [:or :string Regexp] Regexp])
@@ -225,13 +226,35 @@
   (println text))
 
 
+(def ^:dynamic *clock* nil)
+
+
+(defn- swap-clock
+  [_ & args]
+  (apply t/swap! *clock* args))
+
+
+(defn- set-clock
+  [_ clock]
+  (t/reset! *clock* (cond
+                      (t/clock? clock) clock
+                      (t/instant? clock) (t/clock clock)
+                      (string? clock) (t/clock (t/instant clock)))))
+
+
+(defn- reset-clock
+  [_]
+  (t/reset! *clock* (t/clock)))
+
+
 (defn- flow
   [blueprints]
   (try
     (sys/startup!)
     (doseq [[k bp] blueprints]
       (testing (str k)
-        (apply-blueprint bp)))
+        (t/with-clock *clock*
+                      (apply-blueprint bp))))
     (catch Exception ex
       (handle-error ex)
       (throw ex))
@@ -275,7 +298,12 @@
   (let [[h arg] (if (= 2 (count args)) [(first args) (second args)] [nil (first  args)])]
     `(do
        (clojure.test/deftest ~name
-         (let [~'blueprints (mapv #(vector % (get-flow %)) ~arg)]
+         (let [a-clock (t/atom)
+               ~'blueprints (mapv #(cond
+                                     (keyword? %) [% (get-flow %)]
+                                     (vector?  %) [:inline %])
+                                  ~arg)]
            (with-redefs [bbotiscaf.impl.system.app/handler-main
                          (if (some? ~h) (fn [] ~h) bbotiscaf.impl.system.app/handler-main)]
-             (flow ~'blueprints)))))))
+             (binding [*clock* a-clock]
+               (flow ~'blueprints))))))))
