@@ -1,5 +1,6 @@
  (ns bbotiscaf.impl.e2e.flow
    (:require
+     [bbotiscaf.dynamic :refer [*dtlv*]]
      [bbotiscaf.impl.e2e.client :as cl]
      [bbotiscaf.impl.e2e.dummy :as dum]
      [bbotiscaf.impl.errors :refer [handle-error]]
@@ -218,7 +219,8 @@
 
 (defn- call!
   [_ f & args]
-  (apply (find-var f) args))
+  (binding [*dtlv* (app/db-conn)]
+    (apply (find-var f) args)))
 
 
 (defn- action!
