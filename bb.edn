@@ -3,7 +3,7 @@
         integrant/integrant {:mvn/version "0.10.0"}
         aero/aero {:mvn/version "1.1.6"}
         tick/tick {:mvn/version "0.7.5"}}
- :pods {huahaiy/datalevin {:version "0.9.10"}}
+ :pods {huahaiy/datalevin {:version "0.9.12"}}
 
  :tasks
  {test {:doc "Runs tests"

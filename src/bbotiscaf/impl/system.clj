@@ -36,14 +36,14 @@
   (let [schema (merge (get-bbotiscaf-schema) (read-resource-dir "schema"))
         opts   {:validate-data? true
                 :closed-schema? true
-                :auto-entity-time? true}
+                :auto-entity-time? false}
         cn-str (or conn-str (format "/tmp/bbotiscaf-test/%s" (str (java.util.UUID/randomUUID))))]
     (log/debug ::init-db-conn
                "Applying :db/conn %s..." cn-str
                {:conn-str cn-str
                 :schema schema
                 :opts opts})
-    (d/get-conn cn-str schema #_opts)))
+    (d/get-conn cn-str schema opts)))
 
 
 (defmethod ig/halt-key! :db/conn
