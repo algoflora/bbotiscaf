@@ -42,18 +42,35 @@
    CheckMessageBlueprintEntryArgs])
 
 
+(def CheckInvoiceBlueprintEntryArgs
+  [:cat
+   :string
+   :string
+   [:string {:min 3 :max 3}]
+   [:int {:min 0}]
+   [:? [:vector [:vector [:or :string Regexp]]]]])
+
+
+(def CheckInvoiceBlueprintEntry
+  [:cat
+   [:fn qualified-keyword?]
+   CheckInvoiceBlueprintEntryArgs])
+
+
 (def BlueprintEntryArgs
   [:or
    SendTextBlueprintEntryArgs
    ClickBtnBlueprintEntryArgs
-   CheckMessageBlueprintEntryArgs])
+   CheckMessageBlueprintEntryArgs
+   CheckInvoiceBlueprintEntryArgs])
 
 
 (def BlueprintEntry
   [:or
    SendTextBlueprintEntry
    ClickBtnBlueprintEntry
-   CheckMessageBlueprintEntry])
+   CheckMessageBlueprintEntry
+   CheckInvoiceBlueprintEntry])
 
 
 (def Blueprint

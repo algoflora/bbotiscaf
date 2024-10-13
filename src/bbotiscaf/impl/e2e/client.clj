@@ -112,3 +112,19 @@
       (send-update {:callback_query
                     (merge base-cbq
                            {:message msg :data (-> buttons first :callback_data)})}))))
+
+
+(m/=> send-pre-checkout-query [:=> [:cat spec.tg/User spec.tg/Invoice] :uuid])
+
+
+(defn send-pre-checkout-query
+  [dummy invoice]
+  (let [pre-checkout-query-id (random-uuid)]
+    (send-update {:pre_checkout_query {:id (str pre-checkout-query-id)
+                                       :from dummy
+                                       :currency (:currency invoice)
+                                       :total_amount (->> (:prices invoice)
+                                                          (map :amount)
+                                                          (apply +))
+                                       :invoice_payload (:payload invoice)}})
+    pre-checkout-query-id))

@@ -4,6 +4,7 @@
     [bbotiscaf.button :as b]
     [bbotiscaf.dynamic :refer [*user* *dtlv* dtlv]]
     [bbotiscaf.user :as u]
+    [cheshire.core :as json]
     [clojure.string :as str]))
 
 
@@ -73,3 +74,20 @@
 (defn error-expression
   [_]
   (/ 1 0))
+
+
+(defn payment
+  [_]
+  (api/send-message *user* "Give me all your money!" [[(b/text-btn "Invoice" 'invoice)]]))
+
+
+(defn invoice
+  [_]
+  (api/send-invoice *user* {:title "Invoice"
+                            :description "All your money!"
+                            :payload "all-your-money"
+                            :provider_token "" ; Like XTR
+                            :currency "XTR"
+                            :prices (json/generate-string [{:label "Price" :amount 15000}
+                                                           {:lable "Discount" :amount -5000}])}
+                    "Pay 100 XTR" [[(b/text-btn "Dummy button" 'fake)]]))

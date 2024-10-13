@@ -33,3 +33,8 @@
 (defmethod serve :deleteMessage
   [_ {:keys [chat_id message_id]}]
   (dum/delete-message chat_id message_id))
+
+
+(defmethod serve :sendInvoice
+  [_ req]
+  (dum/add-message req))

@@ -9,6 +9,7 @@
 
 (def User
   [:map
+   {:closed true}
    [:id :int]
    [:is_bot :boolean]
    [:first_name :string]
@@ -20,6 +21,7 @@
 
 (def Chat
   [:map
+   {:closed true}
    [:id :int]
    [:type [:enum "private" "group" "supergroup" "channel"]]
    [:title {:optional true} :string]
@@ -63,6 +65,7 @@
 
 (def ReplyMarkup
   [:map
+   {:closed true}
    [:reply_markup {:optional true} [:map
                                     [:inline_keyboard [:vector
                                                        [:vector
@@ -73,6 +76,7 @@
   (m/schema
     [:merge
      [:map
+      {:closed true}
       [:message_id {:optional true} :int]
       [:from  User]
       [:chat Chat]
@@ -90,13 +94,34 @@
     {:registry registry}))
 
 
+(def Invoice
+  [:map
+   {:closed true}
+   [:title [:string {:min 1 :max 32}]]
+   [:description [:string {:min  1 :max 255}]]
+   [:payload [:string {:min 1 :max 128}]]
+   [:provider_token :string]
+   [:currency [:string {:min 3 :max 3}]]
+   [:prices :string]])
+
+
+(def InvoiceMessage
+  (m/schema
+    [:merge
+     BaseMessage
+     Invoice]
+    {:registry registry}))
+
+
 (def Message
   [:or
-   TextMessage])
+   TextMessage
+   InvoiceMessage])
 
 
 (def BaseCallbackQuery
   [:map
+   {:closed true}
    [:id :string]
    [:from User]])
 
@@ -106,6 +131,7 @@
     [:merge
      BaseCallbackQuery
      [:map
+      {:closed true}
       [:message {:optional true} [:or
                                   Message
                                   [:map
@@ -116,24 +142,44 @@
     {:registry registry}))
 
 
+(def PreCheckoutQuery
+  [:map
+   {:closed true}
+   [:id :string]
+   [:from User]
+   [:currency [:string {:min 3 :max 3}]]
+   [:total_amount [:int {:min 0}]]
+   [:invoice_payload [:string {:min 1 :max 128}]]])
+
+
+(def PreCheckoutQueryUpdateData
+  [:map
+   {:closed true}
+   [:pre_checkout_query PreCheckoutQuery]])
+
+
 (def MessageUpdateData
   [:map
+   {:closed true}
    [:message Message]])
 
 
 (def CallbackQueryUpdateData
   [:map
+   {:closed true}
    [:callback_query CallbackQuery]])
 
 
 (def UpdateData
   [:or
    MessageUpdateData
-   CallbackQueryUpdateData])
+   CallbackQueryUpdateData
+   PreCheckoutQueryUpdateData])
 
 
 (def BaseUpdate
   [:map
+   {:closed true}
    [:update_id :int]])
 
 
@@ -153,14 +199,24 @@
     {:registry registry}))
 
 
+(def PreCheckoutQueryUpdate
+  (m/schema
+    [:merge
+     BaseUpdate
+     PreCheckoutQueryUpdateData]
+    {:registry registry}))
+
+
 (def Update
   [:or
    MessageUpdate
-   CallbackQueryUpdate])
+   CallbackQueryUpdate
+   PreCheckoutQueryUpdate])
 
 
 (def BaseRequest
   [:map
+   {:closed true}
    [:chat_id :int]])
 
 
@@ -169,6 +225,7 @@
     [:merge
      BaseRequest
      [:map
+      {:closed true}
       [:text :string]
       [:entities [:maybe [:vector MessageEntity]]]]
      ReplyMarkup]
@@ -180,6 +237,7 @@
     [:merge
      SendMessageRequest
      [:map
+      {:closed true}
       [:message_id :int]]]
     {:registry registry}))
 
@@ -189,6 +247,7 @@
     [:merge
      BaseRequest
      [:map
+      {:closed true}
       [:message_id :int]]]
     {:registry registry}))
 
@@ -196,4 +255,5 @@
 (def Request
   [:or
    SendMessageRequest
+   EditMessageTextRequest
    DeleteMessageRequest])

@@ -128,6 +128,37 @@
         (-check-message msg arg)))))
 
 
+(m/=> check-invoice [:=> [:cat spec.tg/User spec.bp/CheckInvoiceBlueprintEntryArgs] :nil])
+
+
+(defn- check-invoice
+  ([dummy title description currency amount]
+   (check-invoice dummy title description currency amount []))
+  ([dummy title description currency amount buttons]
+   (check-invoice dummy 1 title description currency amount buttons))
+  ([dummy num title description currency amount buttons]
+   (let [{:keys [invoice] :as msg} (get-message dummy num)]
+     (is (some? invoice))
+     (is (= title (:title invoice)))
+     (is (= description (:description invoice)))
+     (is (= currency (:currency invoice)))
+     (is (= amount (:amount invoice)))
+     (-check-message msg buttons))))
+
+
+(defonce pre-checkout-queries (atom {}))
+
+
+(defn- pay-invoice
+  ([dummy] (pay-invoice dummy 1))
+  ([dummy num]
+   (let [{:keys [invoice]} (get-message dummy num)]
+     (is (some? invoice))
+     ((is (map? invoice))
+      (let [pre-checkout-query-id (cl/send-pre-checkout-query dummy invoice)]
+        (swap! pre-checkout-queries assoc pre-checkout-query-id {:dummy dummy :invoice invoice}))))))
+
+
 (defonce vars (atom {}))
 
 

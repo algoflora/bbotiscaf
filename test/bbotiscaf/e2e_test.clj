@@ -69,6 +69,15 @@
    :user/check-msg "Hello World!" [["Button"]]])
 
 
+(defflow :users/payment
+  [:user/send-text "/start"
+   :user/check-msg "Give me all your money!" [["Invoice"]]
+   :user/click-btn "Invoice"
+   :user/check-invoice "Invoice" "All your money!" "XTR" 100 [["Pay 100 XTR"] ["Dummmy button"] ["✖️"]]
+   :user/pay-invoice
+   :user/check-and-cloae-only-temp "Ha-ha-ha!"])
+
+
 (flows-out Core
            [:users/main-message :users/temp-message])
 
@@ -86,3 +95,8 @@
 (flows-out Error
            'bbotiscaf.e2e-test.handler/error
            [:users/error])
+
+
+(flows-out Payment
+           'bbotiscaf.e2e-test.handler/payment
+           [:users/payment])

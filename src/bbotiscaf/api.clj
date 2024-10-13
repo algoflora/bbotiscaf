@@ -24,8 +24,8 @@
   | `string?`  | Message text | |
   | `vector?`  | Message keyboard | |
   | `set?`     | Set of Message Entities | |
+  | `int?`     | ID of Text Message to edit | |
   | `keyword?` | One of options | |
-  | `int`      | ID of Text Message to edit | |
 
   Possible Options:
 
@@ -72,24 +72,24 @@
 ;;   (apply impl/prepare-and-send :document user {:file file :caption caption} kbd :temp opts))
 
 
-;; (defn send-invoice
+(defn send-invoice
 
-;;   "Sends invoice as 'temporal' message with inline keyboard `kbd` to `user`. Keyboard will have payment button with `pay-text` in the beginning and button to delete it in the end.
-;;   Description of `data` map (all keys required):
+  "Sends invoice as 'temporal' message with inline keyboard `kbd` to `user`. Keyboard will have payment button with `pay-text` in the beginning and button to delete it in the end.
+  Description of `data` map (all keys required):
 
-;;   | key               | description |
-;;   |-------------------|-------------|
-;;   | `:title`          | Product name, 1-32 characters
-;;   | `:description`    | Product description, 1-255 characters
-;;   | `:payload`        | Bot-defined invoice payload, 1-128 bytes. This will not be displayed to the user, use for your internal processes.
-;;   | `:provider_token` | Payment provider token
-;;   | `:currency`       | Three-letter ISO 4217 currency code
-;;   | `:prices`         | Price breakdown, a JSON-serialized list of components (e.g. product price, tax, discount, delivery cost, delivery tax, bonus, etc.). Each component have to be map with keys `:label` (string) and `:amount` (integer price of the product in the smallest units of the currency)"
+  | key               | description |
+  |-------------------|-------------|
+  | `:title`          | Product name, 1-32 characters
+  | `:description`    | Product description, 1-255 characters
+  | `:payload`        | Bot-defined invoice payload, 1-128 bytes. This will not be displayed to the user, use for your internal processes.
+  | `:provider_token` | Payment provider token
+  | `:currency`       | Three-letter ISO 4217 currency code
+  | `:prices`         | Price breakdown, a JSON-serialized list of components (e.g. product price, tax, discount, delivery cost, delivery tax, bonus, etc.). Each component have to be map with keys `:label` (string) and `:amount` (integer price of the product in the smallest units of the currency)"
 
-;;   {:added "0.1.0"}
+  {:added "0.1.0"}
 
-;;   [user data pay-text kbd]
-;;   (impl/prepare-and-send :invoice user data (vec (cons [{:text pay-text :pay true}] kbd)) :temp))
+  [user data text kbd]
+  (impl/send! :invoice user text data kbd))
 
 
 (defn get-file

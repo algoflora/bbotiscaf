@@ -8,6 +8,7 @@
     [bbotiscaf.impl.system.app :as app]
     [bbotiscaf.impl.user :as u]
     [bbotiscaf.misc :as misc]
+    [bbotiscaf.spec.api :as spec.api]
     [bbotiscaf.spec.core :as spec]
     [bbotiscaf.spec.model :as spec.mdl]
     [bbotiscaf.spec.telegram :as spec.tg]
@@ -179,11 +180,11 @@
 ;;   (apply send-media-to-chat args))
 
 
-;; (defmethod send-to-chat :invoice
-;;   [_ user data kbd optm]
-;;   (let [argm (prepare-body data kbd optm user)
-;;         new-msg (api-wrap 'send-invoice argm)]
-;;     (set-callbacks-message-id user new-msg)))
+(defmethod send-to-chat :invoice
+  [_ user b options]
+  (let [body (prepare-body b options user)
+        new-msg (api-wrap 'send-invoice body)]
+    (set-callbacks-message-id user new-msg)))
 
 
 (defn- -send-message
@@ -239,15 +240,19 @@
                     (map #(vector % true) opts))}))
 
 
-(m/=> send! [:=> [:cat
-                  :keyword
-                  spec.mdl/User
-                  :string
-                  [:? [:set spec.tg/MessageEntity]]
-                  [:? spec/Buttons]
-                  [:? :int]
-                  [:* :keyword]]
-             :int])
+(defmethod process-args :invoice
+  ([_ user text data] (process-args :invoice user text data []))
+  ([_ user text data kbd]
+   {:body    (merge data {:reply_markup (prepare-keyboard
+                                          (into [[(b/pay-btn text)]] kbd)
+                                          user true)})
+    :options {:temp true}}))
+
+
+;; (m/=> send! [:=> [:cat
+;;                   [:or
+;;                    spec.api/TextArgs
+;;                    spec.api/InvoiceArgs]] :int])
 
 
 (defn send!
