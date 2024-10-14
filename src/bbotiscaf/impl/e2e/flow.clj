@@ -151,7 +151,6 @@
 (defn- pay-invoice
   ([dummy] (pay-invoice dummy 1))
   ([dummy num]
-   (println "INVOICE" (get-message dummy num))
    (let [{:keys [invoice]} (get-message dummy num)]
      (is (some? invoice))
      (is (map? invoice))
