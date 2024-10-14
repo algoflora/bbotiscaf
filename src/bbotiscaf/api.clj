@@ -74,7 +74,7 @@
 
 (defn send-invoice
 
-  "Sends invoice as 'temporal' message with inline keyboard `kbd` to `user`. Keyboard will have payment button with `pay-text` in the beginning and button to delete it in the end.
+  "Sends invoice as 'temporal' message with inline keyboard `kbd` to `user`. Keyboard will have payment button with `text` in the beginning and button to delete it in the end.
   Description of `data` map (all keys required):
 
   | key               | description |
@@ -88,8 +88,9 @@
 
   {:added "0.1.0"}
 
-  [user data text kbd]
-  (impl/send! :invoice user text data kbd))
+  ([user data text] (send-invoice user data text []))
+  ([user data text kbd]
+   (impl/send! :invoice user text data kbd)))
 
 
 (defn get-file
