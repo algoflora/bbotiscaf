@@ -10,4 +10,8 @@
 
  :logging/level :info
 
- :project/config {}}
+ :project/config {}
+
+ :handler/main bbotiscaf.handler/main
+
+ :handler/payment bbotiscaf.handler/payment}

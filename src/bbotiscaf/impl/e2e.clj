@@ -1,5 +1,6 @@
 (ns bbotiscaf.impl.e2e
   (:require
+    [bbotiscaf.impl.e2e.client :as cl]
     [bbotiscaf.impl.e2e.dummy :as dum]
     [bbotiscaf.spec.telegram :as spec.tg]
     [malli.core :as m]
@@ -38,3 +39,8 @@
 (defmethod serve :sendInvoice
   [_ req]
   (dum/add-message req))
+
+
+(defmethod serve :answerPrecheckoutQuery
+  [_ req]
+  (cl/set-pre-checkout-query-status (:pre_checkout_query_id req) (:ok req)))

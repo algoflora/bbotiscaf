@@ -8,7 +8,6 @@
     [bbotiscaf.impl.system.app :as app]
     [bbotiscaf.impl.user :as u]
     [bbotiscaf.misc :as misc]
-    [bbotiscaf.spec.api :as spec.api]
     [bbotiscaf.spec.core :as spec]
     [bbotiscaf.spec.model :as spec.mdl]
     [bbotiscaf.spec.telegram :as spec.tg]
@@ -47,7 +46,7 @@
   (let [api-fn @app/api-fn]
     (log/debug ::calling-api-fn
                "Calling API request function %s..." api-fn
-               {:api/fn api-fn
+               {:api/fn (str api-fn)
                 :method method
                 :data data})
     (api-fn method data)))
@@ -183,7 +182,7 @@
 (defmethod send-to-chat :invoice
   [_ user b options]
   (let [body (prepare-body b options user)
-        new-msg (api-wrap 'send-invoice body)]
+        new-msg (api-wrap :sendInvoice body)]
     (set-callbacks-message-id user new-msg)))
 
 
@@ -297,3 +296,12 @@
                              :message (ex-message ex)
                              :data (ex-data ex)}})))
   (clb/delete user mid))
+
+
+(defn answer-precheckout-query
+  ([pcq-id] (answer-precheckout-query pcq-id nil))
+  ([pcq-id error]
+   (api-wrap :answerPrecheckoutQuery (into {:pre_checkout_query_id pcq-id
+                                            :ok (nil? error)}
+                                           (when (some? error)
+                                             [:error_message error])))))

@@ -4,6 +4,7 @@
     [bbotiscaf.impl.api :as api]
     [bbotiscaf.impl.callback :as clb]
     [bbotiscaf.impl.errors :refer [handle-error]]
+    [bbotiscaf.impl.system.app :as app]
     [bbotiscaf.impl.user :as u]
     [bbotiscaf.misc :refer [validate!]]
     [bbotiscaf.spec.telegram :as spec.tg]
@@ -52,10 +53,14 @@
   [msg]
   (log/debug ::handle-message "Handling Message:\t%s " msg {:message msg})
   (let [f-del (future (api/delete-message *user* (:message_id msg)))]
-    (if (and (= "/start" (:text msg))
-             (some? (:user/msg-id *user*)) (not= 0 (:user/msg-id *user*)))
+    (cond
+      (and (= "/start" (:text msg))
+           (some? (:user/msg-id *user*)) (not= 0 (:user/msg-id *user*)))
       (reset)
-      (-> *user* :user/uuid (clb/call msg)))
+
+      (contains? msg :successful_payment) ((find-var (app/handler-payment)) msg)
+
+      :else (-> *user* :user/uuid (clb/call msg)))
     @f-del))
 
 
@@ -73,3 +78,8 @@
   [_ cbq]
   (binding [*msg* (-> cbq :message :message_id)]
     (-> cbq :data java.util.UUID/fromString clb/call)))
+
+
+(defmethod handle :pre_checkout_query
+  [_ pcq]
+  (api/answer-precheckout-query (:id pcq)))

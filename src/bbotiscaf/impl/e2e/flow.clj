@@ -104,9 +104,11 @@
         (is (= (count (get exp row-idx)) (count row))
             (format "Different columns count in row %d" row-idx))
         (doseq [[col-idx data] (map-indexed vector row)]
-          (let [re  (str?->re data)
-                btn (get-in kbd [row-idx col-idx])]
-            (is (some? (re-find re (:text btn))))))))))
+          (let [re       (str?->re data)
+                btn      (get-in kbd [row-idx col-idx])
+                re-found (re-find re (:text btn))]
+            (testing (format "%s =|= %s" re (:text btn))
+              (is (some? re-found)))))))))
 
 
 (defmethod -check-message clojure.lang.PersistentHashSet
@@ -128,35 +130,38 @@
         (-check-message msg arg)))))
 
 
-(m/=> check-invoice [:=> [:cat spec.tg/User spec.bp/CheckInvoiceBlueprintEntryArgs] :nil])
+(m/=> check-invoice [:=> [:cat spec.tg/User [:? :int] spec.bp/CheckInvoiceBlueprintEntryArgs] :nil])
 
 
 (defn- check-invoice
-  ([dummy title description currency amount]
-   (check-invoice dummy title description currency amount []))
-  ([dummy title description currency amount buttons]
-   (check-invoice dummy 1 title description currency amount buttons))
-  ([dummy num title description currency amount buttons]
+  ([dummy title description currency prices]
+   (check-invoice dummy title description currency prices []))
+  ([dummy title description currency prices buttons]
+   (check-invoice dummy 1 title description currency prices buttons))
+  ([dummy num title description currency prices buttons]
    (let [{:keys [invoice] :as msg} (get-message dummy num)]
      (is (some? invoice))
      (is (= title (:title invoice)))
      (is (= description (:description invoice)))
      (is (= currency (:currency invoice)))
-     (is (= amount (:amount invoice)))
+     (is (= prices (:prices invoice)))
      (-check-message msg buttons))))
-
-
-(defonce pre-checkout-queries (atom {}))
 
 
 (defn- pay-invoice
   ([dummy] (pay-invoice dummy 1))
   ([dummy num]
+   (println "INVOICE" (get-message dummy num))
    (let [{:keys [invoice]} (get-message dummy num)]
      (is (some? invoice))
-     ((is (map? invoice))
-      (let [pre-checkout-query-id (cl/send-pre-checkout-query dummy invoice)]
-        (swap! pre-checkout-queries assoc pre-checkout-query-id {:dummy dummy :invoice invoice}))))))
+     (is (map? invoice))
+     (cl/send-pre-checkout-query dummy invoice)
+     (click-btn dummy 1 "✖️"))))
+
+
+(defn- approve-pre-checkout-query
+  [dummy]
+  (cl/send-successful-payment dummy))
 
 
 (defonce vars (atom {}))

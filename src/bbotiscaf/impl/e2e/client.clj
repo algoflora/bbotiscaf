@@ -1,11 +1,11 @@
 (ns bbotiscaf.impl.e2e.client
   (:require
-    [bbotiscaf.core :as bbot]
     [bbotiscaf.impl.e2e.dummy :as dum]
     [bbotiscaf.spec.action :as spec.act]
     [bbotiscaf.spec.commons :refer [Regexp]]
     [bbotiscaf.spec.telegram :as spec.tg]
     [malli.core :as m]
+    [taoensso.timbre :as log]
     [tick.core :as t]))
 
 
@@ -16,8 +16,10 @@
 
 (defn- send-update
   [data]
-  (let [update (assoc data :update_id (swap! update-id inc))]
-    (#'bbot/handler update)))
+  (let [handler (find-var 'bbotiscaf.core/handler)
+        update (assoc data :update_id (swap! update-id inc))]
+    (log/debug ::send-update {:handler handler :update update})
+    (handler update)))
 
 
 (m/=> send-action-request [:-> spec.act/ActionRequest :any])
@@ -25,7 +27,8 @@
 
 (defn- send-action-request
   [action-request]
-  (#'bbot/handler action-request))
+  (let [handler (find-var 'bbotiscaf.core/handler)]
+    (handler action-request)))
 
 
 (m/=> dummy-kw?->dummy [:-> [:or spec.tg/User :keyword] spec.tg/User])
@@ -114,12 +117,16 @@
                            {:message msg :data (-> buttons first :callback_data)})}))))
 
 
+(defonce ^:private pre-checkout-queries (atom []))
+
+
 (m/=> send-pre-checkout-query [:=> [:cat spec.tg/User spec.tg/Invoice] :uuid])
 
 
 (defn send-pre-checkout-query
   [dummy invoice]
   (let [pre-checkout-query-id (random-uuid)]
+    (swap! pre-checkout-queries conj {:id pre-checkout-query-id :dummy dummy :invoice invoice :approved nil})
     (send-update {:pre_checkout_query {:id (str pre-checkout-query-id)
                                        :from dummy
                                        :currency (:currency invoice)
@@ -128,3 +135,30 @@
                                                           (apply +))
                                        :invoice_payload (:payload invoice)}})
     pre-checkout-query-id))
+
+
+(defn set-pre-checkout-query-status
+  [pcq-id ok?]
+  (log/debug ::set-pre-checkout-query-status {:pre-checkout-query-id pcq-id :ok? ok?})
+  (swap! pre-checkout-queries (fn [pcqs]
+                                (mapv #(if (= (java.util.UUID/fromString pcq-id) (:id %))
+                                         (assoc % :approved ok?) %) pcqs))))
+
+
+(defn send-successful-payment
+  [dummy]
+  (let [{:keys [invoice]} (->> @pre-checkout-queries
+                               (filter #(and (= dummy (:dummy %)) (:approved %)))
+                               last)]
+    (when (nil? invoice)
+      (throw (ex-info "No approved invoice!"
+                      {:event ::no-approved-invoice-error
+                       :dummy dummy
+                       :pre-checkout-queries @pre-checkout-queries})))
+    (send-update {:message (assoc (dummy->base-message dummy)
+                                  :successful_payment
+                                  {:currency (:currency invoice)
+                                   :total_amount (->> invoice :prices (map :amount) (apply +))
+                                   :invoice_payload (:payload invoice)
+                                   :telegram_payment_charge_id (str (random-uuid))
+                                   :provider_payment_charge_id (str (random-uuid))})})))

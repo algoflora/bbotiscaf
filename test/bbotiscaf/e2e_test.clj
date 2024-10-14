@@ -73,9 +73,10 @@
   [:user/send-text "/start"
    :user/check-msg "Give me all your money!" [["Invoice"]]
    :user/click-btn "Invoice"
-   :user/check-invoice "Invoice" "All your money!" "XTR" 100 [["Pay 100 XTR"] ["Dummmy button"] ["✖️"]]
+   :user/check-invoice "Invoice" "All your money!" "XTR" [{:label "Price" :amount 15000} {:label "Discount" :amount -5000}] [["Pay 100 XTR"] ["Dummy button"] ["✖️"]]
    :user/pay-invoice
-   :user/check-and-cloae-only-temp "Ha-ha-ha!"])
+   :user/approve-pre-checkout-query
+   :user/check-and-close-only-temp "Successful payment with payload all-your-money"])
 
 
 (flows-out Core

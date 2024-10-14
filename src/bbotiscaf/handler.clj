@@ -39,6 +39,6 @@
 
   "Payments handler. Must be overriden in project if payments processing is necessary."
 
-  [{:keys [payment]}]
+  [{payment :successful_payment}]
   (api/send-message *user*
                     (str "Successful payment with payload " (:invoice_payload payment)) [] :temp))

@@ -102,21 +102,43 @@
    [:payload [:string {:min 1 :max 128}]]
    [:provider_token :string]
    [:currency [:string {:min 3 :max 3}]]
-   [:prices :string]])
+   [:prices [:vector [:map {:closed true}
+                      [:label :string]
+                      [:amount :int]]]]])
 
 
 (def InvoiceMessage
   (m/schema
     [:merge
      BaseMessage
-     Invoice]
+     [:map {:closed true}
+      [:invoice Invoice]]]
+    {:registry registry}))
+
+
+(def SuccessfulPayment
+  [:map {:closed true}
+   [:currency [:string {:min 3 :max 3}]]
+   [:total_amount :int]
+   [:invoice_payload [:string {:min 1 :max 128}]]
+   [:telegram_payment_charge_id :string]
+   [:provider_payment_charge_id :string]])
+
+
+(def SuccessfulPaymentMessage
+  (m/schema
+    [:merge
+     BaseMessage
+     [:map {:closed true}
+      [:successful_payment SuccessfulPayment]]]
     {:registry registry}))
 
 
 (def Message
   [:or
    TextMessage
-   InvoiceMessage])
+   InvoiceMessage
+   SuccessfulPaymentMessage])
 
 
 (def BaseCallbackQuery
@@ -252,8 +274,35 @@
     {:registry registry}))
 
 
+(def SendInvoiceRequest
+  (m/schema
+    [:merge
+     BaseRequest
+     [:map
+      {:closed true}
+      [:title [:string {:min 1 :max 32}]]
+      [:description [:string {:min 1 :max 255}]]
+      [:payload [:string {:min 1 :max 128}]]
+      [:provider_token {:optional true} :string]
+      [:currency [:string {:min 3 :max 3}]]
+      [:prices [:vector [:map {:closed true}
+                         [:label :string]
+                         [:amount :int]]]]]
+     ReplyMarkup]
+    {:registry registry}))
+
+
+(def AnswerPrecheckoutQueryRequest
+  [:map {:closed true}
+   [:pre_checkout_query_id :string]
+   [:ok :boolean]
+   [:error_message {:optional true} :string]])
+
+
 (def Request
   [:or
    SendMessageRequest
    EditMessageTextRequest
-   DeleteMessageRequest])
+   DeleteMessageRequest
+   SendInvoiceRequest
+   AnswerPrecheckoutQueryRequest])

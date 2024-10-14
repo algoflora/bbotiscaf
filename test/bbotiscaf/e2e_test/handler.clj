@@ -88,6 +88,6 @@
                             :payload "all-your-money"
                             :provider_token "" ; Like XTR
                             :currency "XTR"
-                            :prices (json/generate-string [{:label "Price" :amount 15000}
-                                                           {:lable "Discount" :amount -5000}])}
+                            :prices [{:label "Price" :amount 15000}
+                                     {:label "Discount" :amount -5000}]}
                     "Pay 100 XTR" [[(b/text-btn "Dummy button" 'fake)]]))

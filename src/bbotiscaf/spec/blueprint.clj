@@ -47,7 +47,7 @@
    :string
    :string
    [:string {:min 3 :max 3}]
-   [:int {:min 0}]
+   [:vector [:map {:closed true} [:label :string] [:amount :int]]]
    [:? [:vector [:vector [:or :string Regexp]]]]])
 
 
