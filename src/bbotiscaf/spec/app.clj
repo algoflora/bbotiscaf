@@ -8,6 +8,8 @@
    [:db/conn [:maybe :string]]
    [:bot/default-language-code :keyword]
    [:bot/roles [:map-of :keyword [:vector [:or :int :string :keyword]]]]
+   [:handler/main :symbol]
+   [:handler/payment :symbol]
    [:logging/level :keyword]
    [:project/config :map]])
 
@@ -19,7 +21,8 @@
    [:bot/default-language-code {:optional true} :keyword]
    [:bot/roles {:optional true} [:map-of :keyword [:vector [:or :int :string :keyword]]]]
    [:handler/namespaces [:vector :symbol]]
-   [:handler/main :symbol]
+   [:handler/main {:optional true} :symbol]
+   [:handler/payment {:optional true} :symbol]
    [:logging/level {:optional true} :keyword]
    [:project/config {:optional true} :map]])
 
@@ -34,5 +37,6 @@
    [:bot/roles [:map-of :keyword [:vector [:or :int :string :keyword]]]]
    [:handler/namespaces [:vector :symbol]]
    [:handler/main :symbol]
+   [:handler/payment :symbol]
    [:logging/level :keyword]
    [:project/config :map]])

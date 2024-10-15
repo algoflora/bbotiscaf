@@ -4,6 +4,7 @@
     [bbotiscaf.impl.config :as conf]
     [bbotiscaf.impl.timer :refer [millis-passed]]
     [cheshire.core :refer [generate-string]]
+    [clojure.java.io :as io]
     [clojure.stacktrace :as st]
     [clojure.string :as str]
     [clojure.walk :refer [postwalk]]
@@ -106,15 +107,25 @@
          (spit "logs.json" (str (generate-string (check-json (obj-prepare event))) "\n") :append true))})
 
 
+(defn- edn-prepare
+  [obj]
+  (postwalk (fn [x]
+              (cond
+                (instance? java.util.regex.Pattern x) (prn-str x)
+                :else x))
+            obj))
+
+
 (def lambda-edn-spit-appender
   {:enabled? (= conf/profile :test)
    :min-level :debug
    :fn (fn [event]
-         (spit "logs.edn" (-> event
-                              obj-prepare
-                              prn-str
-                              (str/replace "#'" "'")
-                              (str/replace "#\"" "\"")) :append true))})
+         (with-open [w (java.io.FileWriter. "logs.edn" true)]
+           (let [line  (with-out-str (print-method (-> event obj-prepare edn-prepare) *out*))
+                 line' (-> line
+                           (str/replace #"#\"[^\"]+\"" "<REGEX>")
+                           (str/replace #"#'" "'"))]
+             (.write w (str line' "\n")))))})
 
 
 (fs/delete-if-exists "logs.json")

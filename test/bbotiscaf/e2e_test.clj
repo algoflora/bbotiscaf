@@ -69,6 +69,16 @@
    :user/check-msg "Hello World!" [["Button"]]])
 
 
+(defflow :users/payment
+  [:user/send-text "/start"
+   :user/check-msg "Give me all your money!" [["Invoice"]]
+   :user/click-btn "Invoice"
+   :user/check-invoice "Invoice" "All your money!" "XTR" [{:label "Price" :amount 15000} {:label "Discount" :amount -5000}] [["Pay 100 XTR"] ["Dummy button"] ["✖️"]]
+   :user/pay-invoice
+   :user/approve-pre-checkout-query
+   :user/check-and-close-only-temp "Successful payment with payload all-your-money"])
+
+
 (flows-out Core
            [:users/main-message :users/temp-message])
 
@@ -86,3 +96,8 @@
 (flows-out Error
            'bbotiscaf.e2e-test.handler/error
            [:users/error])
+
+
+(flows-out Payment
+           'bbotiscaf.e2e-test.handler/payment
+           [:users/payment])

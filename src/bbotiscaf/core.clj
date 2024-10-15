@@ -40,6 +40,7 @@
 
 (defn- handler
   [req]
+  (log/debug ::core-handler {:request req})
   (d/with-transaction [conn (app/db-conn)]
                       (binding [*dtlv* conn]
                         (cond

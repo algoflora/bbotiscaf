@@ -104,12 +104,28 @@
   (-> dummy :username keyword ((deref dummies)) :messages first))
 
 
-(m/=> add-message [:=> [:cat [:or spec.tg/SendMessageRequest spec.tg/Message]] spec.tg/Message])
+(defn- prepare-request
+  [req]
+  (cond ; TODO: Think about it...
+    (m/validate spec.tg/SendMessageRequest req) (identity req)
+    (m/validate spec.tg/Message req)            (identity req)
+    (m/validate spec.tg/SendInvoiceRequest req) (let [root-keys [:chat_id :reply_markup]]
+                                                  (assoc (select-keys req root-keys)
+                                                         :invoice
+                                                         (apply dissoc req root-keys)))))
+
+
+(m/=> add-message [:=> [:cat [:or
+                              spec.tg/SendMessageRequest
+                              spec.tg/SendInvoiceRequest
+                              spec.tg/Message]]
+                   spec.tg/Message])
 
 
 (defn add-message
-  [req]
-  (let [{:keys [dummy messages]} (get-by-chat-id (or (:chat_id req) (-> req :chat :id)))]
+  [r]
+  (let [req (prepare-request r)
+        {:keys [dummy messages]} (get-by-chat-id (or (:chat_id req) (-> req :chat :id)))]
     (swap! dummies (fn [dms]
                      (update-in dms [(-> dummy :username keyword) :messages]
                                 conj (merge {:message_id (-> messages

@@ -46,7 +46,7 @@
   (let [api-fn @app/api-fn]
     (log/debug ::calling-api-fn
                "Calling API request function %s..." api-fn
-               {:api/fn api-fn
+               {:api/fn (str api-fn)
                 :method method
                 :data data})
     (api-fn method data)))
@@ -179,11 +179,11 @@
 ;;   (apply send-media-to-chat args))
 
 
-;; (defmethod send-to-chat :invoice
-;;   [_ user data kbd optm]
-;;   (let [argm (prepare-body data kbd optm user)
-;;         new-msg (api-wrap 'send-invoice argm)]
-;;     (set-callbacks-message-id user new-msg)))
+(defmethod send-to-chat :invoice
+  [_ user b options]
+  (let [body (prepare-body b options user)
+        new-msg (api-wrap :sendInvoice body)]
+    (set-callbacks-message-id user new-msg)))
 
 
 (defn- -send-message
@@ -239,15 +239,19 @@
                     (map #(vector % true) opts))}))
 
 
-(m/=> send! [:=> [:cat
-                  :keyword
-                  spec.mdl/User
-                  :string
-                  [:? [:set spec.tg/MessageEntity]]
-                  [:? spec/Buttons]
-                  [:? :int]
-                  [:* :keyword]]
-             :int])
+(defmethod process-args :invoice
+  ([_ user text data] (process-args :invoice user text data []))
+  ([_ user text data kbd]
+   {:body    (merge data {:reply_markup (prepare-keyboard
+                                          (into [[(b/pay-btn text)]] kbd)
+                                          user true)})
+    :options {:temp true}}))
+
+
+;; (m/=> send! [:=> [:cat
+;;                   [:or
+;;                    spec.api/TextArgs
+;;                    spec.api/InvoiceArgs]] :int])
 
 
 (defn send!
@@ -292,3 +296,12 @@
                              :message (ex-message ex)
                              :data (ex-data ex)}})))
   (clb/delete user mid))
+
+
+(defn answer-precheckout-query
+  ([pcq-id] (answer-precheckout-query pcq-id nil))
+  ([pcq-id error]
+   (api-wrap :answerPrecheckoutQuery (into {:pre_checkout_query_id pcq-id
+                                            :ok (nil? error)}
+                                           (when (some? error)
+                                             [:error_message error])))))

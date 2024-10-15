@@ -109,6 +109,14 @@
   handler)
 
 
+(defmethod ig/init-key :handler/payment
+  [_ handler]
+  (log/debug ::init-handler-payment
+             "Applying :handler/payment %s..." handler
+             {:handler handler})
+  handler)
+
+
 (defmethod ig/init-key :logging/level
   [_ level]
   (let [lvl (if (some #{"--debug"} *command-line-args*) :debug level)]
