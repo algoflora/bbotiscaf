@@ -2,10 +2,8 @@
   (:require
     [bbotiscaf.dynamic :refer [*dtlv* dtlv]]
     [bbotiscaf.impl.system.app :as app]
+    [datalevin.core :as d]
     [taoensso.timbre :as log]))
-
-
-(require '[pod.huahaiy.datalevin :as d])
 
 
 (defn get-list

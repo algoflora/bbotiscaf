@@ -4,11 +4,9 @@
     [bbotiscaf.button :as b]
     [bbotiscaf.dynamic :refer [*user* *dtlv* dtlv]]
     [bbotiscaf.user :as u]
-    [cheshire.core :as json]
-    [clojure.string :as str]))
-
-
-(require '[pod.huahaiy.datalevin :as d])
+    [clojure.string :as str]
+    [datalevin.core :as d]
+    [taoensso.timbre :as log]))
 
 
 (defn main
@@ -49,10 +47,11 @@
   (let [name (ffirst (d/q '[:find ?n
                             :in $ ?uid
                             :where
-                            [?u :user/id ?uid]
-                            [?e :test-entity/user ?u]
+                            [?e :test-entity/user [:user/id ?uid]]
                             [?e :test-entity/data ?n]] (dtlv) (:user/id *user*)))]
-    (api/send-message *user* name [])))
+    (log/debug ::reveal-2 {})
+    (api/send-message *user* name [])
+    (log/debug ::reveal-3 {})))
 
 
 (defn roled

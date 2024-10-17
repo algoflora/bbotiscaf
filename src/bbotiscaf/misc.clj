@@ -1,9 +1,10 @@
 (ns bbotiscaf.misc
   (:require
-    [babashka.fs :as fs]
     [clojure.edn :as edn]
     [clojure.java.io :as io]
-    [malli.core :as m]))
+    [clojure.string :as str]
+    [malli.core :as m]
+    [resauce.core :as res]))
 
 
 (defn dbg
@@ -21,18 +22,35 @@
 
 (defn- to-readable
   [path]
-  (or (io/resource path) (.toFile path)))
+  (-> path .toAbsolutePath .toUri)
+  #_(or (io/resource path) (.toFile path)))
+
+
+(defn- read-resource
+  [resource-url]
+  (with-open [stream (io/input-stream resource-url)]
+    (-> stream
+        io/reader
+        java.io.PushbackReader. edn/read)))
 
 
 (defn read-resource-dir
-  ([path] (read-resource-dir path "**.edn"))
-  ([path pattern]
-   (some->> (some-> path
-                    io/resource
-                    (fs/glob pattern)
-                    flatten)
-            (map #(-> % to-readable slurp edn/read-string))
-            (apply merge))))
+  [dir]
+  (when-let [resources (some-> dir io/resource res/url-dir)]
+    (->> resources
+         (filter #(str/ends-with? % ".edn"))
+         (mapcat read-resource))))
+
+
+;; (defn read-resource-dir
+;;   ([path] (read-resource-dir path "**.edn"))
+;;   ([path pattern]
+;;    (some->> (some-> path
+;;                     io/resource
+;;                     (fs/glob pattern)
+;;                     flatten)
+;;             (map #(-> % to-readable slurp edn/read-string))
+;;             (apply merge))))
 
 
 (defmulti remove-nils (fn [x]

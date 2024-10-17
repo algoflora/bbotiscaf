@@ -2,29 +2,27 @@
   (:require
     [bbotiscaf.dynamic :refer [*dtlv* dtlv *user*]]
     [bbotiscaf.impl.system.app :as app]
-    [bbotiscaf.misc :refer [do-nanos do-nanos*]]
+    ;; [bbotiscaf.misc :refer [do-nanos do-nanos*]]
     [bbotiscaf.spec.model :as spec.mdl]
+    [datalevin.core :as d]
     [malli.core :as m]
     [taoensso.timbre :as log]))
 
 
-(require '[pod.huahaiy.datalevin :as d])
+;; (def require-namespaces
+;;   (delay
+;;     (let [namespaces  (app/handler-namespaces)
 
+;;           {:keys [result nanos]}
+;;           (do-nanos* (into {}
+;;                            (map #(vector (keyword %) (* (do-nanos (require %)) 0.000001))
+;;                                 (conj namespaces 'bbotiscaf.handler))))
 
-(def require-namespaces
-  (delay
-    (let [namespaces  (app/handler-namespaces)
-
-          {:keys [result nanos]}
-          (do-nanos* (into {}
-                           (map #(vector (keyword %) (* (do-nanos (require %)) 0.000001))
-                                (conj namespaces 'bbotiscaf.handler))))
-
-          time-millis (* nanos 0.000001)]
-      (log/info ::require-namespaces
-                "Required namespaces (%.3f msec): %s" time-millis (str namespaces)
-                {:namespaces result
-                 :time-millis time-millis}))))
+;;           time-millis (* nanos 0.000001)]
+;;       (log/info ::require-namespaces
+;;                 "Required namespaces (%.3f msec): %s" time-millis (str namespaces)
+;;                 {:namespaces result
+;;                  :time-millis time-millis}))))
 
 
 (defn callbacks-count
@@ -61,7 +59,7 @@
      ;; TODO: possible perfomance leak
      (log/debug ::callback-created
                 "Callback created"
-                {:callbacks-count (callbacks-count)
+                {;; :callbacks-count (callbacks-count)
                  :callback        (ffirst (d/q '[:find (pull ?cb [*])
                                                  :in $ ?uuid
                                                  :where [?cb :callback/uuid ?uuid]]
@@ -74,12 +72,15 @@
 
 (defn delete
   [user mid]
+  (log/debug ::callbacks-dtlv {:user user :mid mid :dtlv (dtlv)
+                               :datoms (d/datoms (dtlv) :eav)})
   (let [db-ids-to-retract (d/q '[:find ?cb
                                  :in $ ?uid ?mid
                                  :where
                                  [?cb :callback/message-id ?mid]
                                  [?cb :callback/user [:user/id ?uid]]]
                                (dtlv) (:user/id user) mid)]
+    (log/debug ::callbacks-retraction-transact {})
     (d/transact! *dtlv* (mapv #(vector :db/retractEntity (first %)) db-ids-to-retract))
     ;; TODO: possible perfomance leak
     (log/debug ::callbacks-retracted
@@ -87,7 +88,8 @@
                {:message-id      mid
                 :retracted-count (count db-ids-to-retract)
                 :to-retract      db-ids-to-retract
-                :callbacks-count (callbacks-count)})))
+                ;; :callbacks-count (callbacks-count)
+                })))
 
 
 (m/=> set-new-message-ids [:=> [:cat spec.mdl/User [:or :int :nil] [:vector :uuid]] :nil])
@@ -114,7 +116,8 @@
                 :message-id mid
                 :callback-uuids uuids
                 :retracted-callbacks-uuids uuids-to-retract
-                :final-callbacks-count (callbacks-count)})))
+                ;; :final-callbacks-count (callbacks-count)
+                })))
 
 
 (m/=> load-callback [:-> :uuid spec.mdl/Callback])
@@ -153,7 +156,9 @@
 
 (defn call-func
   [func args]
-  ((find-var func) args))
+  (log/debug ::call-func-1 {})
+  ((requiring-resolve func) args)
+  (log/debug ::call-func-2 {}))
 
 
 (m/=> call [:function
@@ -164,8 +169,7 @@
 (defn call
   ([uuid] (call uuid {}))
   ([uuid args]
-   (let [_ @require-namespaces
-         callback (load-callback uuid)
+   (let [callback (load-callback uuid)
          func (:callback/function callback)
          args (merge (:callback/arguments callback) args)]
      (when-not (true? (:callback/is-service callback))

@@ -14,4 +14,6 @@
 
  :handler/main bbotiscaf.handler/main
 
+ :handler/actions-namespace bbotiscaf.actions
+
  :handler/payment bbotiscaf.handler/payment}

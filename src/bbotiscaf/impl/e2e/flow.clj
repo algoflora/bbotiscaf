@@ -6,6 +6,7 @@
      [bbotiscaf.impl.errors :refer [handle-error]]
      [bbotiscaf.impl.system :as sys]
      [bbotiscaf.impl.system.app :as app]
+     [bbotiscaf.logging]
      [bbotiscaf.spec.blueprint :as spec.bp]
      [bbotiscaf.spec.commons :refer [Regexp]]
      [bbotiscaf.spec.telegram :as spec.tg]
@@ -55,7 +56,7 @@
               "Dummy %s sendindg message: %s" (-> dummy :username keyword) text
               {:dummy dummy
                :text text})
-   (cl/send-text dummy (str text) entities)))
+   (log/debug ::dummy-sent-text {:response (cl/send-text dummy (str text) entities)})))
 
 
 (m/=> click-btn [:=> [:cat spec.tg/User spec.bp/ClickBtnBlueprintEntryArgs] :any])
@@ -210,7 +211,7 @@
 
                    :else (-> key dum/new :dummy))
            symb  (-> blueprint first name)
-           func  (find-var (symbol "bbotiscaf.impl.e2e.flow" symb))
+           func  (resolve (symbol "bbotiscaf.impl.e2e.flow" symb))
            args  (->> blueprint rest (take-while #(not (qualified-keyword? %))))]
        (testing (format "%4d | <%s/%s %s>\n" line key symb (str/join " " args))
          (apply func dummy args))
@@ -255,7 +256,7 @@
 (defn- call!
   [_ f & args]
   (binding [*dtlv* (app/db-conn)]
-    (apply (find-var f) args)))
+    (apply (requiring-resolve f) args)))
 
 
 (defn- action!
@@ -289,7 +290,7 @@
   (t/reset! *clock* (t/clock)))
 
 
-(defn- flow
+(defn flow
   [blueprints]
   (try
     (sys/startup!)
@@ -308,7 +309,7 @@
 (defonce flows (atom {}))
 
 
-(defn- get-flow
+(defn get-flow
   [key]
   (if-let [flow (key @flows)]
     flow
@@ -340,12 +341,12 @@
   (let [[h arg] (if (= 2 (count args)) [(first args) (second args)] [nil (first  args)])]
     `(do
        (clojure.test/deftest ~name
-         (let [a-clock (t/atom)
+         (let [~'a-clock (t/atom)
                ~'blueprints (mapv #(cond
                                      (keyword? %) [% (get-flow %)]
                                      (vector?  %) [:inline %])
                                   ~arg)]
            (with-redefs [bbotiscaf.impl.system.app/handler-main
                          (if (some? ~h) (fn [] ~h) bbotiscaf.impl.system.app/handler-main)]
-             (binding [*clock* a-clock]
+             (binding [*clock* ~'a-clock]
                (flow ~'blueprints))))))))

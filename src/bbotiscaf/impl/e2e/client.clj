@@ -16,7 +16,7 @@
 
 (defn- send-update
   [data]
-  (let [handler (find-var 'bbotiscaf.core/handler)
+  (let [handler (requiring-resolve 'bbotiscaf.core/handler)
         update (assoc data :update_id (swap! update-id inc))]
     (log/debug ::send-update {:handler handler :update update})
     (handler update)))
@@ -27,7 +27,7 @@
 
 (defn- send-action-request
   [action-request]
-  (let [handler (find-var 'bbotiscaf.core/handler)]
+  (let [handler (requiring-resolve 'bbotiscaf.core/handler)]
     (handler action-request)))
 
 
@@ -73,8 +73,11 @@
   [dummy text entities]
   (let [message (merge (dummy->base-message dummy)
                        {:text text :entities entities})]
+    (log/debug ::send-text-1)
     (dum/add-message message)
-    (send-update {:message message})))
+    (log/debug ::send-text-2)
+    (send-update {:message message})
+    (log/debug ::send-text-3)))
 
 
 (m/=> dummy->base-callback-query [:-> [:or spec.tg/User :keyword] spec.tg/BaseCallbackQuery])

@@ -61,6 +61,11 @@
   (:handler/main @app))
 
 
+(defn handler-actions-namespace
+  []
+  (:handler/actions-namespace @app))
+
+
 (defn handler-payment
   []
   (:handler/payment @app))
@@ -69,3 +74,8 @@
 (defn handler-namespaces
   []
   (:handler/namespaces @app))
+
+
+(defn thread-pool
+  []
+  (:system/thread-pool @app))

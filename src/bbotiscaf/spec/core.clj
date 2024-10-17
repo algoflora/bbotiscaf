@@ -26,4 +26,6 @@
 (def Buttons
   [:vector
    [:maybe [:vector
-            [:maybe [:fn (fn [btn] (instance? b/KeyboardButton btn))]]]]])
+            [:maybe :map #_[:fn (fn [btn]
+                           (println "INSTANCE\t" (instance? b/KeyboardButton btn) (type btn))
+                           (instance? b/KeyboardButton btn))]]]]])

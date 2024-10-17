@@ -37,7 +37,8 @@
   [update]
   (log/debug ::handle-update "Handling Update:\t%s " update {:update update})
   (let [type (some types (keys update))]
-    (handle-update- type update)))
+    (handle-update- type update)
+    (log/debug ::handle-update-finish)))
 
 
 (defn- reset
@@ -51,17 +52,14 @@
 
 (defn- handle-message
   [msg]
-  (log/debug ::handle-message "Handling Message:\t%s " msg {:message msg})
-  (let [f-del (future (api/delete-message *user* (:message_id msg)))]
-    (cond
-      (and (= "/start" (:text msg))
-           (some? (:user/msg-id *user*)) (not= 0 (:user/msg-id *user*)))
-      (reset)
+  (api/delete-message *user* (:message_id msg))
+  (cond
+    (and (= "/start" (:text msg))
+         (some? (:user/msg-id *user*)) (not= 0 (:user/msg-id *user*)))
+    (reset)
+    (contains? msg :successful_payment) ((requiring-resolve (app/handler-payment)) msg)
 
-      (contains? msg :successful_payment) ((find-var (app/handler-payment)) msg)
-
-      :else (-> *user* :user/uuid (clb/call msg)))
-    @f-del))
+    :else (-> *user* :user/uuid (clb/call msg))))
 
 
 (defmethod handle :message

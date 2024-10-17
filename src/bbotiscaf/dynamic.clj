@@ -1,25 +1,14 @@
 (ns bbotiscaf.dynamic
   (:require
-    [babashka.pods :refer [load-pod]]
-    [bbotiscaf.logging]
-    [bbotiscaf.misc :refer [do-nanos]]
-    [taoensso.timbre :as log]))
+    [datalevin.core :as d]))
 
-
-(let [time-millis (* (do-nanos (load-pod #_"/dtlv" 'huahaiy/datalevin "0.9.12")) 0.000001)]
-  (log/info ::datalevin-pod-loaded
-            "Datalevin Pod loaded in %.3f msec" time-millis
-            {:time-millis time-millis}))
-
-
-(require '[pod.huahaiy.datalevin :refer [db]])
 
 (def ^:dynamic *dtlv* nil)
 
 
 (defn dtlv
   []
-  (db *dtlv*))
+  (d/db *dtlv*))
 
 
 (def ^:dynamic *user* nil)

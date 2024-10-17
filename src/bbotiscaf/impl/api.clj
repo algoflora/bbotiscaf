@@ -1,7 +1,5 @@
 (ns ^:no-doc bbotiscaf.impl.api
   (:require
-    [babashka.fs :as fs]
-    [babashka.http-client :as http]
     [bbotiscaf.button :as b]
     [bbotiscaf.impl.callback :as clb]
     [bbotiscaf.impl.system.app :as app]
@@ -11,7 +9,10 @@
     [bbotiscaf.spec.model :as spec.mdl]
     [bbotiscaf.spec.telegram :as spec.tg]
     [cheshire.core :refer [generate-string parse-string]]
+    [clojure.core.async :refer [go <!!]]
     [malli.core :as m]
+    [me.raynes.fs :as fs]
+    [org.httpkit.client :as hk-client]
     [taoensso.timbre :as log]))
 
 
@@ -20,8 +21,8 @@
   (let [url  (format "https://api.telegram.org/bot%s/%s" @app/bot-token (name method))
 
         {:keys [result nanos]}
-        (misc/do-nanos* (http/post url {:headers {:content-type "application/json"}
-                                        :body (generate-string data)}))
+        (misc/do-nanos* @(hk-client/post url {:headers {:content-type "application/json"}
+                                              :body (generate-string data)}))
 
         resp (update result :body #(try (parse-string % true)
                                         (catch Throwable _ %)))]
@@ -40,6 +41,17 @@
                  :response resp}))))
 
 
+(defonce ^:private channels (atom []))
+
+
+(defn flush-api
+  []
+  (log/debug ::flush-api {:channels-count (count @channels)})
+  (doseq [ch @channels]
+    (<!! ch))
+  (reset! channels []))
+
+
 (defn api-wrap
   [method data]
   (let [api-fn @app/api-fn]
@@ -48,7 +60,10 @@
                {:api/fn (str api-fn)
                 :method method
                 :data data})
-    (api-fn method data)))
+    ;; (api-fn method data)
+    (let [ch (go (api-fn method data))]
+      (swap! channels conj ch)
+      ch)))
 
 
 (m/=> prepare-keyboard [:=>
@@ -72,13 +87,15 @@
 
 (defn- set-callbacks-message-id
   [user msg]
+  (log/debug ::set-callbacks-message-id-1 {})
   (clb/set-new-message-ids
     user
     (:message_id msg)
     (->> msg
          :reply_markup :inline_keyboard flatten
          (map #(some-> % :callback_data java.util.UUID/fromString))
-         (filterv some?))))
+         (filterv some?)))
+  (log/debug ::set-callbacks-message-id-2 {}))
 
 
 (defn- to-edit?
@@ -209,7 +226,7 @@
 (defmethod send-to-chat :text
   [_ user b options]
   (let [body       (prepare-body b options user)
-        new-msg    ((if (to-edit? options user) -edit-message-text -send-message) body)
+        new-msg    (<!! ((if (to-edit? options user) -edit-message-text -send-message) body))
         new-msg-id (:message_id new-msg)]
     (log/debug ::send-to-chat-message
                "Message sent to chat: %s" (:text body)
@@ -220,6 +237,7 @@
     (when (and (not (:temp options)) (not= new-msg-id (:msg-id user)))
       (u/set-msg-id user new-msg-id))
     (set-callbacks-message-id user new-msg)
+    (log/debug ::sent-to-chat {})
     new-msg-id))
 
 
@@ -263,7 +281,7 @@
   [file-path]
   (let [uri (format "https://api.telegram.org/file/bot%s/%s"
                     @app/bot-token file-path)
-        bis  (-> uri http/get deref :body)
+        bis  (-> uri hk-client/get deref :body)
         file (fs/file fs/temp-dir (java.util.UUID/randomUUID))
         fos  (java.io.FileOutputStream. file)]
     (try
@@ -286,6 +304,7 @@
   (try
     (api-wrap :deleteMessage {:chat_id (:user/id user)
                               :message_id mid})
+    (log/debug ::delete-message-ok)
     (catch Exception ex
       (log/warn ::delete-message-exception
                 "Exception on Message deletion: %s" (ex-message ex)
@@ -293,8 +312,10 @@
                  :message-id mid
                  :exception {:type (type ex)
                              :message (ex-message ex)
-                             :data (ex-data ex)}})))
-  (clb/delete user mid))
+                             :data (ex-data ex)}}))
+    (finally (log/debug ::delete-message-finally {})))
+  (clb/delete user mid)
+  (log/debug ::delete-message-end {}))
 
 
 (defn answer-precheckout-query

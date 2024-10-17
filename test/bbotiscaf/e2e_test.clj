@@ -93,7 +93,7 @@
            [:users/roles])
 
 
-(flows-out Error
+(flows-out Fail
            'bbotiscaf.e2e-test.handler/error
            [:users/error])
 

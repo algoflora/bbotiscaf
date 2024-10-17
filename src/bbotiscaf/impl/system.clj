@@ -1,18 +1,20 @@
 (ns bbotiscaf.impl.system
   (:require
     [bbotiscaf.impl.config :as conf]
-    [bbotiscaf.impl.e2e]
     [bbotiscaf.impl.errors :refer [handle-error]]
     [bbotiscaf.impl.system.app :as app]
     [bbotiscaf.misc :refer [read-resource-dir]]
     [clojure.edn :as edn]
     [clojure.java.io :as io]
+    [datalevin.core :as d]
     [integrant.core :as ig]
     [malli.instrument :as mi]
-    [taoensso.timbre :as log]))
-
-
-(require '[pod.huahaiy.datalevin :as d])
+    [me.raynes.fs :as fs]
+    [taoensso.timbre :as log])
+  (:import
+    (java.util.concurrent
+      ExecutorService
+      Executors)))
 
 
 (defn- get-bbotiscaf-schema
@@ -28,7 +30,7 @@
   (log/debug ::init-api-fn
              "Applying :api/fn %s..." symbol
              {:symbol symbol})
-  (find-var symbol))
+  (requiring-resolve symbol))
 
 
 (defmethod ig/init-key :db/conn
@@ -109,6 +111,14 @@
   handler)
 
 
+(defmethod ig/init-key :handler/actions-namespace
+  [_ actions-ns]
+  (log/debug ::init-handler-actions-namespace
+             "Applying :handler/actions-namespace %s..." actions-ns
+             {:actions-ns actions-ns})
+  actions-ns)
+
+
 (defmethod ig/init-key :handler/payment
   [_ handler]
   (log/debug ::init-handler-payment
@@ -119,7 +129,7 @@
 
 (defmethod ig/init-key :logging/level
   [_ level]
-  (let [lvl (if (some #{"--debug"} *command-line-args*) :debug level)]
+  (let [lvl :debug]
     (log/merge-config! {:min-level lvl})
     lvl))
 

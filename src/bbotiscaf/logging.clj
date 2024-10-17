@@ -1,13 +1,12 @@
 (ns bbotiscaf.logging
   (:require
-    [babashka.fs :as fs]
     [bbotiscaf.impl.config :as conf]
     [bbotiscaf.impl.timer :refer [millis-passed]]
     [cheshire.core :refer [generate-string]]
-    [clojure.java.io :as io]
     [clojure.stacktrace :as st]
     [clojure.string :as str]
     [clojure.walk :refer [postwalk]]
+    [me.raynes.fs :as fs]
     [taoensso.timbre :as timbre]))
 
 
@@ -51,7 +50,7 @@
 
 (def lambda-stdout-appender
   {:enabled?   (= conf/profile :test)
-   :async?     false
+   :async?     true
    :min-level  :info
    :rate-limit nil
    :output-fn  :inherit
@@ -95,6 +94,7 @@
 
 (def lambda-json-println-appender
   {:enabled? (= conf/profile :aws)
+   :async? true
    :min-level :debug
    :fn (fn [event]
          (println (generate-string (check-json (obj-prepare event)))))})
@@ -118,24 +118,31 @@
 
 (def lambda-edn-spit-appender
   {:enabled? (= conf/profile :test)
+   :async? false
    :min-level :debug
    :fn (fn [event]
          (with-open [w (java.io.FileWriter. "logs.edn" true)]
-           (let [line  (with-out-str (print-method (-> event obj-prepare edn-prepare) *out*))
+           (let [line  (with-out-str (print-method (-> event obj-prepare #_edn-prepare) *out*))
                  line' (-> line
                            (str/replace #"#\"[^\"]+\"" "<REGEX>")
                            (str/replace #"#'" "'"))]
              (.write w (str line' "\n")))))})
 
 
-(fs/delete-if-exists "logs.json")
+(defn delete-if-exists
+  [f]
+  (when (fs/exists? f)
+    (fs/delete f)))
 
 
-(fs/delete-if-exists "logs.edn")
+(delete-if-exists "logs.json")
+
+
+(delete-if-exists "logs.edn")
 
 
 (timbre/merge-config! {:appenders (merge {:println lambda-stdout-appender
-                                          :json-file lambda-json-spit-appender
+                                          ;; :json-file lambda-json-spit-appender
                                           :edn-file lambda-edn-spit-appender
                                           :json-print lambda-json-println-appender})})
 

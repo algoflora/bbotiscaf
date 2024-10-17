@@ -1,8 +1,8 @@
 (ns bbotiscaf.core
   (:gen-class)
   (:require
-    [actions]
     [bbotiscaf.dynamic :refer [*dtlv*]]
+    [bbotiscaf.impl.api :as api]
     [bbotiscaf.impl.handler :as h]
     [bbotiscaf.impl.system :as sys]
     [bbotiscaf.impl.system.app :as app]
@@ -13,11 +13,9 @@
     [bbotiscaf.spec.core :as spec]
     [bbotiscaf.spec.telegram :as spec.tg]
     [cheshire.core :as json]
+    [datalevin.core :as d]
     [malli.core :as m]
     [taoensso.timbre :as log]))
-
-
-(require '[pod.huahaiy.datalevin :as d])
 
 
 (m/=> handle-action [:-> spec.act/ActionRequest :any])
@@ -25,7 +23,7 @@
 
 (defn- handle-action
   [{:keys [action] {:keys [method arguments]} :action}]
-  (if-let [action-fn (resolve (symbol "actions" method))]
+  (if-let [action-fn (resolve (symbol (app/handler-actions-namespace) method))]
     (log/info ::action-success
               "Action '%s' completed successfully" type
               {:action action
@@ -39,7 +37,7 @@
 (m/=> handler [:-> spec/Request :any])
 
 
-(defn- handler
+(defn handler
   [req]
   (log/debug ::core-handler {:request req})
   (d/with-transaction [conn (app/db-conn)]
@@ -49,7 +47,8 @@
                           (h/handle-update req)
 
                           (m/validate spec.act/ActionRequest req)
-                          (handle-action req)))))
+                          (handle-action req)))
+                      (api/flush-api)))
 
 
 (m/=> log-and-prepare [:-> spec.aws/SQSRecordSchema spec/Request])
@@ -94,4 +93,4 @@
 
 (defn -main
   [& args]
-  (println "ARGS" args))
+  (apply sqs-receiver args))
