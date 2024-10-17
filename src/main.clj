@@ -1,6 +1,9 @@
 (ns main
-  (:require [bbotiscaf.core :as bbot]))
+  (:require
+    [bbotiscaf.core :as bbot]))
 
-(defn handler [& args]
+
+(defn handler
+  [& args]
   (println "Hello from BBotiscaf!")
   (apply bbot/sqs-receiver args))

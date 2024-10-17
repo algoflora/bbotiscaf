@@ -6,7 +6,7 @@
     [taoensso.timbre :as log]))
 
 
-(let [time-millis (* (do-nanos (load-pod 'huahaiy/datalevin "0.9.12")) 0.000001)]
+(let [time-millis (* (do-nanos (load-pod #_"/dtlv" 'huahaiy/datalevin "0.9.12")) 0.000001)]
   (log/info ::datalevin-pod-loaded
             "Datalevin Pod loaded in %.3f msec" time-millis
             {:time-millis time-millis}))

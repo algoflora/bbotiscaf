@@ -64,17 +64,17 @@
 
 (defmacro do-nanos
   [& body]
-  `(let [t0 (system-time)]
+  `(let [~'t0 (System/nanoTime)]
      ~@body
-     (- (system-time) t0)))
+     (- (System/nanoTime) ~'t0)))
 
 
 (defmacro do-nanos*
   [& body]
-  `(let [t0 (system-time)
-         r (do ~@body)]
-     {:result r
-      :nanos (- (system-time) t0)}))
+  `(let [~'t0 (System/nanoTime)
+         ~'r (do ~@body)]
+     {:result ~'r
+      :nanos (- (System/nanoTime) ~'t0)}))
 
 
 (defn- char-range

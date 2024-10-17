@@ -1,13 +1,13 @@
 (ns bbotiscaf.impl.timer)
 
-(defonce ^:private timer (atom (system-time)))
+(defonce ^:private timer (atom (System/nanoTime)))
 
 
 (defn reset-timer!
   []
-  (reset! timer (system-time)))
+  (reset! timer (System/nanoTime)))
 
 
 (defn millis-passed
   []
-  (* 0.000001 (- (system-time) @timer)))
+  (* 0.000001 (- (System/nanoTime) @timer)))

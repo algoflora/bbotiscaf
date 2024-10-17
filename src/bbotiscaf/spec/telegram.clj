@@ -160,7 +160,7 @@
                                    [:from User]
                                    [:message_id :int]
                                    [:date [:= 0]]]]]
-      [:chat_instance :string]
+      [:chat_instance {:optional true} :int]
       [:data {:optional true} [:string {:min 1 :max 64}]]]]
     {:registry registry}))
 

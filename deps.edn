@@ -1,0 +1,13 @@
+{:paths ["src" "resources"]
+ :deps {babashka/babashka {:mvn/version "1.4.192"}
+        metosin/malli {:mvn/version "0.16.3"}
+        integrant/integrant {:mvn/version "0.10.0"}
+        aero/aero {:mvn/version "1.1.6"}
+        tick/tick {:mvn/version "0.7.5"}
+        org.clojure/clojure {:mvn/version "1.12.0"}}
+
+ :aliases {:jar {:replace-deps {com.github.seancorfield/depstar {:mvn/version "2.1.303"}}
+                 :exec-fn hf.depstar/jar
+                 :exec-args {:jar "lambda.jar"
+                             :aot bbotiscaf.core
+                             :main-class "bbotiscaf.core"}}}}

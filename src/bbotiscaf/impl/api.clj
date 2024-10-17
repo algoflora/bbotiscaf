@@ -3,7 +3,6 @@
     [babashka.fs :as fs]
     [babashka.http-client :as http]
     [bbotiscaf.button :as b]
-    [bbotiscaf.impl.button :as ib]
     [bbotiscaf.impl.callback :as clb]
     [bbotiscaf.impl.system.app :as app]
     [bbotiscaf.impl.user :as u]
@@ -68,7 +67,7 @@
   (when kbd
     {:inline_keyboard
      (cond-> (mapv (fn [btns] (mapv #(b/to-map % user) btns)) kbd)
-       temp? (conj [(b/to-map (ib/->XButton) user)]))}))
+       temp? (conj [(b/to-map (b/->XButton) user)]))}))
 
 
 (defn- set-callbacks-message-id

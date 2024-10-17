@@ -1,4 +1,5 @@
 (ns bbotiscaf.core
+  (:gen-class)
   (:require
     [actions]
     [bbotiscaf.dynamic :refer [*dtlv*]]
@@ -89,3 +90,8 @@
         (-> r log-and-prepare handler)))
     (finally
       (sys/shutdown!))))
+
+
+(defn -main
+  [& args]
+  (println "ARGS" args))

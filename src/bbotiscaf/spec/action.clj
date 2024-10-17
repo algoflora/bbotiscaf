@@ -1,6 +1,6 @@
 (ns bbotiscaf.spec.action
   (:require
-    [bbotiscaf.spec.commons :refer [Error]]))
+    [bbotiscaf.spec.commons :refer [Fail]]))
 
 
 (def Action
@@ -26,7 +26,7 @@
   [:map
    [:action Action]
    [:ok [:= false]]
-   [:error Error]])
+   [:error Fail]])
 
 
 (def ActionResponse
